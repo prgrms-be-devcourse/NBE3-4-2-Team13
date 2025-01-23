@@ -1,0 +1,7 @@
+#JWT config
+jwt:
+  secret: JWT_SECRET
+  issuer: JWT_ISSUER
+  token:
+    access-expiration: 1800000
+    refresh_expiration: 604800000

@@ -1,0 +1,38 @@
+#spring:
+#  datasource:
+#    driver-class-name: com.mysql.cj.jdbc.Driver
+#    url: jdbc:mysql://${AWS_RDS_ENDPOINT}:3306/${AWS_RDS_DATABASE}?serverTimezone=Asia/Seoul
+#    username: ${AWS_RDS_USERNAME}
+#    password: ${AWS_RDS_PASSWORD}
+#  sql:
+#    init:
+#      mode: never
+#  jpa:
+#    hibernate:
+#      ddl-auto: validate
+#      naming:
+#        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+#    properties:
+#      hibernate:
+#        default_batch_fetch_size: 100
+#        dialect: org.hibernate.dialect.MySQLDialect
+#        #highlight_sql: true
+#        #format_sql: true
+#        #show_sql: true
+#        #use_sql_comments: true
+#      open-in-view: false
+#  data:
+#    redis:
+#      host: ${REDIS_ENDPOINT}
+#      port:
+#      password: ${REDIS_PASSWORD}
+#      lettuce:
+#        pool:
+#          min-idle: 0
+#          max-idle: 8
+#          max-active: 8
+
+#logging:
+#  level:
+#    org.hibernate.sql: debug
+#    org.hibernate.type: trace
