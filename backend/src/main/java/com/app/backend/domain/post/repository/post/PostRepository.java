@@ -1,4 +1,4 @@
-package com.app.backend.domain.post.repository;
+package com.app.backend.domain.post.repository.post;
 
 import com.app.backend.domain.post.entity.Post;
 import org.springframework.data.jpa.repository.JpaRepository;

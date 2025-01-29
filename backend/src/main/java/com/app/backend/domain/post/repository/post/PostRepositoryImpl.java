@@ -1,4 +1,4 @@
-package com.app.backend.domain.post.repository;
+package com.app.backend.domain.post.repository.post;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
