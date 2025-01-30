@@ -4,16 +4,15 @@ import com.app.backend.domain.member.entity.Member;
 
 import java.time.LocalDateTime;
 
-public record MemberResponse(
+public record KakaoJoinResponseDto(
     Long id,
     String username,
     String nickname,
     String role,
     LocalDateTime createdAt
 ) {
-    // Entity -> DTO 변환을 위한 정적 팩토리 메서드
-    public static MemberResponse from(Member member) {
-        return new MemberResponse(
+    public static KakaoJoinResponseDto from(Member member) {
+        return new KakaoJoinResponseDto(
             member.getId(),
             member.getUsername(),
             member.getNickname(),

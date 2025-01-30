@@ -13,14 +13,16 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.NonNull;
 
 @Entity
 @Table(name = "tbl_groups")
 @Getter
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Group extends BaseEntity {
 
@@ -52,41 +54,6 @@ public class Group extends BaseEntity {
     @Min(1)
     private Integer maxRecruitCount;    //모임 최대 인원
 
-    @Builder(access = AccessLevel.PRIVATE)
-    private Group(@NonNull @NotBlank final String name,
-                  @NonNull @NotBlank final String province,
-                  @NonNull @NotBlank final String city,
-                  @NonNull @NotBlank final String town,
-                  @NonNull @NotBlank final String description,
-                  @NonNull final RecruitStatus recruitStatus,
-                  @NonNull @NotBlank @Min(1) final Integer maxRecruitCount) {
-        this.name = name;
-        this.province = province;
-        this.city = city;
-        this.town = town;
-        this.description = description;
-        this.recruitStatus = recruitStatus;
-        this.maxRecruitCount = maxRecruitCount;
-    }
-
-    public static Group of(@NonNull @NotBlank final String name,
-                           @NonNull @NotBlank final String province,
-                           @NonNull @NotBlank final String city,
-                           @NonNull @NotBlank final String town,
-                           @NonNull @NotBlank final String description,
-                           @NonNull final RecruitStatus recruitStatus,
-                           @NonNull @Min(1) final Integer maxRecruitCount) {
-        return Group.builder()
-                    .name(name)
-                    .province(province)
-                    .city(city)
-                    .town(town)
-                    .description(description)
-                    .recruitStatus(recruitStatus)
-                    .maxRecruitCount(maxRecruitCount)
-                    .build();
-    }
-
     //============================== 모임(Group) 수정 메서드 ==============================//
 
     /**
@@ -95,7 +62,7 @@ public class Group extends BaseEntity {
      * @param newName - 새로운 모임 이름
      * @return this
      */
-    public Group modifyName(@NonNull @NotBlank final String newName) {
+    public Group modifyName(@NotNull @NotBlank final String newName) {
         if (!name.equals(newName))
             name = newName;
         return this;
@@ -127,7 +94,7 @@ public class Group extends BaseEntity {
      * @param newDescription - 새로운 모임 정보
      * @return this
      */
-    public Group modifyDescription(@NonNull @NotBlank final String newDescription) {
+    public Group modifyDescription(@NotNull @NotBlank final String newDescription) {
         if (!description.equals(newDescription))
             description = newDescription;
         return this;
@@ -139,7 +106,7 @@ public class Group extends BaseEntity {
      * @param newRecruitStatus - 새로운 모집 상태
      * @return this
      */
-    public Group modifyRecruitStatus(@NonNull final RecruitStatus newRecruitStatus) {
+    public Group modifyRecruitStatus(@NotNull final RecruitStatus newRecruitStatus) {
         if (recruitStatus != newRecruitStatus)
             recruitStatus = newRecruitStatus;
         return this;
@@ -151,7 +118,7 @@ public class Group extends BaseEntity {
      * @param newMaxRecruitCount - 새로운 최대 모집 인원
      * @return this
      */
-    public Group modifyMaxRecruitCount(@NonNull @Min(1) final Integer newMaxRecruitCount) {
+    public Group modifyMaxRecruitCount(@NotNull @Min(1) final Integer newMaxRecruitCount) {
         if (!maxRecruitCount.equals(newMaxRecruitCount))
             maxRecruitCount = newMaxRecruitCount;
         return this;

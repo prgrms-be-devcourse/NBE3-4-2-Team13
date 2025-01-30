@@ -202,4 +202,15 @@ gradle-app.setting
 **/generated/**/Q*.java
 **/generated/**/Q*.class
 
+# .env 파일 무시
+.env
+.env.local
+.env.*.local
+
+# example 파일은 포함
+!.env.example
+
+bin/
+.vscode/
+
 # End of https://www.toptal.com/developers/gitignore/api/windows,intellij,java,gradle

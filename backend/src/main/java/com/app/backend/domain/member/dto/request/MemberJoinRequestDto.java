@@ -1,8 +1,9 @@
 package com.app.backend.domain.member.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
-public record MemberCreateRequest(
+public record MemberJoinRequestDto(
         @NotBlank(message = "아이디는 필수입니다.")
         String username,
 
@@ -10,6 +11,7 @@ public record MemberCreateRequest(
         String password,
 
         @NotBlank(message = "닉네임은 필수입니다.")
+        @Size(min = 2, max = 10, message = "닉네임은 2자 이상 10자 이하여야 합니다.")
         String nickname
 ) {
 }

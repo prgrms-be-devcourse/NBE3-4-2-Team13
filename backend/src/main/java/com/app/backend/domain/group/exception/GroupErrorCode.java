@@ -9,7 +9,7 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum GroupErrorCode implements DomainErrorCode {
 
-    GROUP_NOT_FOUND(HttpStatus.NOT_FOUND, "GR0001", "모임을 찾지 못함");
+    GROUP_NOT_FOUND(HttpStatus.NOT_FOUND, "GR001", "모임을 찾지 못함");
 
     private final HttpStatus status;
     private final String     code;

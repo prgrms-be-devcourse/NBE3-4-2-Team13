@@ -9,12 +9,16 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
+@Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 @Table(name = "tbl_categories")
 public class Category extends BaseEntity {
 	@Id
@@ -25,4 +29,7 @@ public class Category extends BaseEntity {
 	@Column(length = 10, nullable = false)
 	private String name;
 
+	public void modifyName(String newName) {
+		this.name = newName; // 이름 변경
+	}
 }
