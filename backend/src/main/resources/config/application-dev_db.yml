@@ -31,7 +31,8 @@ spring:
           min-idle: 0
           max-idle: 8
           max-active: 8
-
+  file:
+    base-dir: /uploads
 #logging:
 #  level:
 #    org.hibernate.sql: debug

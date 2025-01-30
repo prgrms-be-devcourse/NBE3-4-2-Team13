@@ -25,7 +25,8 @@ spring:
     redis:
       host: localhost
       port: 6379
-
+  file:
+    base-dir: /testUploads
 #logging:
 #  level:
 #    org.hibernate.sql: debug
