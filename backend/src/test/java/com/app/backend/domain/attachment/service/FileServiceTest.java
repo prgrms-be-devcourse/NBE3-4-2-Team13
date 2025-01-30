@@ -50,19 +50,17 @@ public class FileServiceTest {
     }
 
     @Test
-    @DisplayName("파일 업로드")
+    @DisplayName("Success : 파일 업로드")
     public void testSave() {
 
         String filePath = fileService.saveFile(mockFile);
-
-        System.out.println(filePath);
 
         Assertions.assertThat(filePath).isNotNull();
         Assertions.assertThat(Files.exists(Paths.get(filePath))).isTrue();
     }
 
     @Test
-    @DisplayName("파일 삭제")
+    @DisplayName("Success : 파일 삭제")
     public void testDelete() {
 
         String filePath = fileService.saveFile(mockFile);
