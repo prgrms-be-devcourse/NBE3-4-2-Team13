@@ -393,11 +393,6 @@ public class PostServiceTest {
         em.flush();
         em.clear();
 
-        List<Post> allPosts = postRepository.findAll();
-        for (Post post : allPosts) {
-            System.out.println(post.getTitle());  // 저장된 순서 확인
-        }
-
         Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "fail"));
 
         // Then
