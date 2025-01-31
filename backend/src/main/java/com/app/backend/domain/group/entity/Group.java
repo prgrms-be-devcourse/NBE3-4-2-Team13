@@ -1,13 +1,18 @@
 package com.app.backend.domain.group.entity;
 
+import com.app.backend.domain.chat.room.entity.ChatRoom;
 import com.app.backend.global.entity.BaseEntity;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -53,6 +58,10 @@ public class Group extends BaseEntity {
     @Column(nullable = false)
     @Min(1)
     private Integer maxRecruitCount;    //모임 최대 인원
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "chat_room_id")
+    private ChatRoom chatRoom;      // 채팅방
 
     //============================== 모임(Group) 수정 메서드 ==============================//
 

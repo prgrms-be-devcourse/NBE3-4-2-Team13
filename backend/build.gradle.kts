@@ -30,6 +30,10 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-web")
+    // WebSocket
+    implementation("org.springframework.boot:spring-boot-starter-websocket")
+    // MongoDB
+    implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
     //Redis
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
     //Jackson Datatype: JSR310

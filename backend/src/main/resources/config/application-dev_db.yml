@@ -31,9 +31,14 @@ spring:
           min-idle: 0
           max-idle: 8
           max-active: 8
+    mongodb:
+      uri: ${MONGO_DB_URI}
   file:
     base-dir: /uploads
-#logging:
-#  level:
+logging:
+  level:
+    org.mongodb.driver.client: warn
+    org.mongodb.driver.cluster: warn
+
 #    org.hibernate.sql: debug
 #    org.hibernate.type: trace

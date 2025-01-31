@@ -41,7 +41,7 @@ public class CategoryService {
 
 	// 카테고리 목록 페이지로 조회
 	public CategoryPageDto getCategories(Pageable pageable) {
-		Page<Category> categoryPage = categoryRepository.findAll(pageable);
+		Page<Category> categoryPage = categoryRepository.findByDisabledFalse(pageable);
 
 		List<CategoryDto> categories = categoryPage
 			.getContent()
@@ -84,5 +84,15 @@ public class CategoryService {
 		validateCategoryName(newName); // 입력값 검증
 
 		category.modifyName(newName);
+	}
+
+	@Transactional
+	public void softDelete(Long id) {
+		Category category = categoryRepository.findById(id)
+			.orElseThrow(() -> new CategoryException(CategoryErrorCode.CATEGORY_NOT_FOUND));
+
+		category.softDelete();
+
+		categoryRepository.save(category);
 	}
 }
