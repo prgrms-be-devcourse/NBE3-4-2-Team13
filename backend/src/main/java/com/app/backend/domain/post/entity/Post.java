@@ -36,16 +36,23 @@ public class Post extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private PostStatus postStatus;
 
-    @JoinColumn(name = "member_id")
-    @ManyToOne(fetch = FetchType.LAZY)
-    private Member member;
+    @Setter
+    @Column(nullable = false)
+    private Long memberId;
 
-    @JoinColumn(name = "group_id")
-    @ManyToOne(fetch = FetchType.LAZY)
-    private Group group;
+//    Member Entity 연관관계
+//    @JoinColumn(name = "member_id")
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    private Member member;
 
-    @OneToMany(mappedBy = "post")
-    private List<Comment> comments;
+    @Setter
+    @Column(nullable = false)
+    private Long groupId;
+
+//    Group Entity 연관관계
+//    @JoinColumn(name = "group_id")
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    private Group group;
 
     public void delete(){
         if(!this.getDisabled()){
