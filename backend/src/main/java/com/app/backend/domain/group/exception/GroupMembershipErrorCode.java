@@ -8,9 +8,10 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public enum GroupErrorCode implements DomainErrorCode {
+public enum GroupMembershipErrorCode implements DomainErrorCode {
 
-    GROUP_NOT_FOUND(HttpStatus.NOT_FOUND, "GR001", "모임을 찾지 못함");
+    GROUP_MEMBERSHIP_NOT_FOUND(HttpStatus.BAD_REQUEST, "GM001", "모임 멤버십을 찾을 수 없음"),
+    GROUP_MEMBERSHIP_NO_PERMISSION(HttpStatus.FORBIDDEN, "GM002", "모임 수정 권한이 없음");
 
     private final HttpStatus status;
     private final String     code;
