@@ -64,14 +64,14 @@ public class GroupService {
                            .recruitStatus(RecruitStatus.RECRUITING)
                            .maxRecruitCount(dto.getMaxRecruitCount())
                            .build();
-        groupRepository.save(group);
 
         //모임 채팅방 엔티티 생성
         ChatRoom chatRoom = ChatRoom.builder()
                                     .group(group)
                                     .build();
-        chatRoomRepository.save(chatRoom);
         group.setChatRoom(chatRoom);
+        chatRoomRepository.save(chatRoom);
+        groupRepository.save(group);
 
         //모임 멤버십 엔티티 생성(회원-모임 연결 테이블, 모임 관리자 권한(LEADER) 부여)
         GroupMembership groupMembership = GroupMembership.builder()
