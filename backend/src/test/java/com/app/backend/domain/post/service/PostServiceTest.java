@@ -71,6 +71,7 @@ public class PostServiceTest {
 
     private void autoIncrementReset() {
         em.createNativeQuery("ALTER TABLE tbl_posts ALTER COLUMN post_id RESTART WITH 1").executeUpdate();
+        em.createNativeQuery("ALTER TABLE tbl_members ALTER COLUMN member_id RESTART WITH 1").executeUpdate();
         em.createNativeQuery("ALTER TABLE tbl_post_attachments ALTER COLUMN attachment_id RESTART WITH 1").executeUpdate();
     }
 
