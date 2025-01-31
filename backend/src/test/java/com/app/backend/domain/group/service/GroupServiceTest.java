@@ -3,13 +3,19 @@ package com.app.backend.domain.group.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.app.backend.domain.chat.room.entity.ChatRoom;
 import com.app.backend.domain.group.dto.request.GroupRequest;
 import com.app.backend.domain.group.dto.response.GroupResponse;
 import com.app.backend.domain.group.entity.Group;
+import com.app.backend.domain.group.entity.GroupMembership;
+import com.app.backend.domain.group.entity.GroupRole;
 import com.app.backend.domain.group.entity.RecruitStatus;
 import com.app.backend.domain.group.exception.GroupErrorCode;
 import com.app.backend.domain.group.exception.GroupException;
+import com.app.backend.domain.group.exception.GroupMembershipErrorCode;
+import com.app.backend.domain.group.exception.GroupMembershipException;
 import com.app.backend.domain.group.supporter.SpringBootTestSupporter;
+import com.app.backend.domain.member.entity.Member;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
@@ -31,8 +37,16 @@ class GroupServiceTest extends SpringBootTestSupporter {
 
     @Test
     @DisplayName("[성공] 모임 저장")
-    void createOrder() {
+    void createGroup() {
         //Given
+        Member member = Member.builder()
+                              .username("testUsername")
+                              .password("testPassword")
+                              .nickname("testNickname")
+                              .build();
+        em.persist(member);
+        Long memberId = member.getId();
+
         GroupRequest.Create request = GroupRequest.Create.builder()
                                                          .name("test")
                                                          .province("test province")
@@ -41,13 +55,16 @@ class GroupServiceTest extends SpringBootTestSupporter {
                                                          .description("test description")
                                                          .maxRecruitCount(10)
                                                          .build();
+        request.setMemberId(memberId);
 
         //When
         Long id = groupService.createGroup(request);
         afterEach();
 
         //Then
-        Group savedGroup = em.find(Group.class, id);
+        Group           savedGroup      = em.find(Group.class, id);
+        ChatRoom        chatRoom        = chatRoomRepository.findAll().stream().findFirst().get();
+        GroupMembership groupMembership = groupMembershipRepository.findByGroupIdAndMemberId(id, memberId).get();
 
         assertThat(savedGroup.getName()).isEqualTo(request.getName());
         assertThat(savedGroup.getProvince()).isEqualTo(request.getProvince());
@@ -56,6 +73,8 @@ class GroupServiceTest extends SpringBootTestSupporter {
         assertThat(savedGroup.getDescription()).isEqualTo(request.getDescription());
         assertThat(savedGroup.getRecruitStatus()).isEqualTo(RecruitStatus.RECRUITING);
         assertThat(savedGroup.getMaxRecruitCount()).isEqualTo(request.getMaxRecruitCount());
+        assertThat(groupMembership.getMemberId()).isEqualTo(memberId);
+        assertThat(savedGroup.getChatRoom()).isEqualTo(chatRoom);
     }
 
     @Test
@@ -487,6 +506,14 @@ class GroupServiceTest extends SpringBootTestSupporter {
     @DisplayName("[성공] ID로 모임 조회 후 값 수정")
     void modifyGroup() {
         //Given
+        Member member = Member.builder()
+                              .username("testUsername")
+                              .password("testPassword")
+                              .nickname("testNickname")
+                              .build();
+        em.persist(member);
+        Long memberId = member.getId();
+
         Group group = Group.builder()
                            .name("test")
                            .province("test province")
@@ -497,11 +524,17 @@ class GroupServiceTest extends SpringBootTestSupporter {
                            .maxRecruitCount(10)
                            .build();
         em.persist(group);
-        Long id = group.getId();
+        Long groupId = group.getId();
+
+        GroupMembership groupMembership = GroupMembership.builder()
+                                                         .member(member)
+                                                         .group(group)
+                                                         .groupRole(GroupRole.LEADER)
+                                                         .build();
+        em.persist(groupMembership);
         afterEach();
 
         GroupRequest.Update update = GroupRequest.Update.builder()
-                                                        .groupId(id)
                                                         .name("new test")
                                                         .province("new test province")
                                                         .city("new test city")
@@ -510,6 +543,8 @@ class GroupServiceTest extends SpringBootTestSupporter {
                                                         .recruitStatus(RecruitStatus.CLOSED.name())
                                                         .maxRecruitCount(20)
                                                         .build();
+        update.setGroupId(groupId);
+        update.setMemberId(memberId);
 
         //When
         GroupResponse.Detail response = groupService.modifyGroup(update);
@@ -539,6 +574,7 @@ class GroupServiceTest extends SpringBootTestSupporter {
 
         GroupRequest.Update update = GroupRequest.Update.builder()
                                                         .groupId(unknownId)
+                                                        .memberId(unknownId)
                                                         .name("new test")
                                                         .province("new test province")
                                                         .city("new test city")
@@ -551,10 +587,10 @@ class GroupServiceTest extends SpringBootTestSupporter {
         //When
 
         //Then
-        GroupErrorCode errorCode = GroupErrorCode.GROUP_NOT_FOUND;
+        GroupMembershipErrorCode errorCode = GroupMembershipErrorCode.GROUP_MEMBERSHIP_NOT_FOUND;
 
         assertThatThrownBy(() -> groupService.modifyGroup(update))
-                .isInstanceOf(GroupException.class)
+                .isInstanceOf(GroupMembershipException.class)
                 .hasFieldOrPropertyWithValue("domainErrorCode", errorCode)
                 .hasMessage(errorCode.getMessage());
     }
@@ -563,6 +599,14 @@ class GroupServiceTest extends SpringBootTestSupporter {
     @DisplayName("[성공] ID로 모임 삭제(Soft Delete)")
     void deleteGroup() {
         //Given
+        Member member = Member.builder()
+                              .username("testUsername")
+                              .password("testPassword")
+                              .nickname("testNickname")
+                              .build();
+        em.persist(member);
+        Long memberId = member.getId();
+
         Group group = Group.builder()
                            .name("test")
                            .province("test province")
@@ -573,14 +617,21 @@ class GroupServiceTest extends SpringBootTestSupporter {
                            .maxRecruitCount(10)
                            .build();
         em.persist(group);
-        Long id = group.getId();
+        Long groupId = group.getId();
+
+        GroupMembership groupMembership = GroupMembership.builder()
+                                                         .member(member)
+                                                         .group(group)
+                                                         .groupRole(GroupRole.LEADER)
+                                                         .build();
+        em.persist(groupMembership);
         afterEach();
 
         //When
-        boolean flag = groupService.deleteGroup(id);
+        boolean flag = groupService.deleteGroup(groupId, memberId);
 
         //Then
-        Group deletedGroup = em.find(Group.class, id);
+        Group deletedGroup = em.find(Group.class, groupId);
 
         assertThat(flag).isTrue();
         assertThat(deletedGroup.getDisabled()).isTrue();
@@ -595,10 +646,10 @@ class GroupServiceTest extends SpringBootTestSupporter {
         //When
 
         //Then
-        GroupErrorCode errorCode = GroupErrorCode.GROUP_NOT_FOUND;
+        GroupMembershipErrorCode errorCode = GroupMembershipErrorCode.GROUP_MEMBERSHIP_NOT_FOUND;
 
-        assertThatThrownBy(() -> groupService.deleteGroup(unknownId))
-                .isInstanceOf(GroupException.class)
+        assertThatThrownBy(() -> groupService.deleteGroup(unknownId, unknownId))
+                .isInstanceOf(GroupMembershipException.class)
                 .hasFieldOrPropertyWithValue("domainErrorCode", errorCode)
                 .hasMessage(errorCode.getMessage());
     }
