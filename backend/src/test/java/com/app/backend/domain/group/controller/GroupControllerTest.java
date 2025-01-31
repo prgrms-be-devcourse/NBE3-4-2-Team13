@@ -20,6 +20,7 @@ import com.app.backend.domain.group.entity.Group;
 import com.app.backend.domain.group.entity.RecruitStatus;
 import com.app.backend.domain.group.exception.GroupException;
 import com.app.backend.domain.group.supporter.WebMvcTestSupporter;
+import com.app.backend.global.annotation.CustomWithMockUser;
 import com.app.backend.global.dto.response.ApiResponse;
 import com.app.backend.global.error.exception.GlobalErrorCode;
 import com.app.backend.global.util.ReflectionUtil;
@@ -58,10 +59,11 @@ class GroupControllerTest extends WebMvcTestSupporter {
         when(groupService.getGroup(anyLong())).thenReturn(response);
         when(groupService.getGroups()).thenReturn(responseList);
         when(groupService.modifyGroup(any(GroupRequest.Update.class))).thenReturn(response);
-        when(groupService.deleteGroup(anyLong())).thenReturn(true);
+        when(groupService.deleteGroup(anyLong(), anyLong())).thenReturn(true);
     }
 
     @Test
+    @CustomWithMockUser
     @DisplayName("[성공] 신규 모임 생성")
     void createGroup() throws Exception {
         //Given
@@ -93,6 +95,7 @@ class GroupControllerTest extends WebMvcTestSupporter {
     }
 
     @Test
+    @CustomWithMockUser
     @DisplayName("[예외] 신규 모임 생성 요청 DTO에 올바르지 않은 값 존재 시")
     void createGroup_invalidValue() throws Exception {
         //Given
@@ -127,6 +130,7 @@ class GroupControllerTest extends WebMvcTestSupporter {
     }
 
     @Test
+    @CustomWithMockUser
     @DisplayName("[성공] ID로 모임 단 건 조회")
     void getGroupById() throws Exception {
         //Given
@@ -149,6 +153,7 @@ class GroupControllerTest extends WebMvcTestSupporter {
     }
 
     @Test
+    @CustomWithMockUser
     @DisplayName("[예외] 올바르지 않은 ID로 모임 단 건 조회 시도")
     void getGroupById_invalidId() throws Exception {
         //Given
@@ -173,6 +178,7 @@ class GroupControllerTest extends WebMvcTestSupporter {
     }
 
     @Test
+    @CustomWithMockUser
     @DisplayName("[성공] 모임 목록 조회")
     void getGroups() throws Exception {
         //Given
@@ -195,6 +201,7 @@ class GroupControllerTest extends WebMvcTestSupporter {
     }
 
     @Test
+    @CustomWithMockUser
     @DisplayName("[성공] 기존 모임 수정")
     void modifyGroup() throws Exception {
         //Given
@@ -227,6 +234,7 @@ class GroupControllerTest extends WebMvcTestSupporter {
     }
 
     @Test
+    @CustomWithMockUser
     @DisplayName("[예외] 올바르지 않은 ID로 기존 모임 수정 시도")
     void modifyGroup_invalidId() throws Exception {
         //Given
@@ -263,6 +271,7 @@ class GroupControllerTest extends WebMvcTestSupporter {
     }
 
     @Test
+    @CustomWithMockUser
     @DisplayName("[성공] 기존 모임 삭제(Soft Delete)")
     void deleteGroup() throws Exception {
         //Given
@@ -284,6 +293,7 @@ class GroupControllerTest extends WebMvcTestSupporter {
     }
 
     @Test
+    @CustomWithMockUser
     @DisplayName("[예외] 올바르지 않은 ID로 기존 모임 삭제 시도")
     void deleteGroup_invalidId() throws Exception {
         //Given
