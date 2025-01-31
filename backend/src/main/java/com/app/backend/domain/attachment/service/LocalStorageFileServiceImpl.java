@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -34,6 +35,7 @@ public class LocalStorageFileServiceImpl implements FileService {
             // 디렉토리가 존재하지 않으면 생성
             if (!Files.exists(dateDir)) {
                 Files.createDirectories(dateDir);
+                Files.setPosixFilePermissions(dateDir, PosixFilePermissions.fromString("rwxrwxrwx"));
             }
 
             String originalFileName = file.getOriginalFilename();
