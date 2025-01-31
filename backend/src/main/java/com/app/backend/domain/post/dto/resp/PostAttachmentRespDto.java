@@ -7,14 +7,14 @@ import lombok.Getter;
 public class PostAttachmentRespDto {
 
     @Getter
-    public static class GetPostAttachment{
+    public static class GetPostAttachmentDto {
         private final Long attachmentId;
         private final String fileName;
         private final FileType fileType;
         private final String filePath;
         private final Long fileSize;
 
-        public GetPostAttachment(final PostAttachment postAttachment) {
+        public GetPostAttachmentDto(final PostAttachment postAttachment) {
             this.attachmentId = postAttachment.getId();
             this.fileName = postAttachment.getOriginalFileName();
             this.fileType = postAttachment.getFileType();

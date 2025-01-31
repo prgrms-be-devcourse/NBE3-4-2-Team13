@@ -1,8 +1,9 @@
 package com.app.backend.domain.post.dto.resp;
 
+import com.app.backend.domain.member.entity.Member;
 import com.app.backend.domain.post.entity.Post;
-import com.app.backend.domain.post.entity.PostAttachment;
 import com.app.backend.domain.post.entity.PostStatus;
+import com.app.backend.global.util.AppUtil;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -12,7 +13,7 @@ public class PostRespDto {
 
     @Getter
     @AllArgsConstructor
-    public static class PostIdDto {
+    public static class GetPostIdDto {
         private final Long postId;
     }
 
@@ -23,20 +24,41 @@ public class PostRespDto {
         private final String title;
         private final String content;
         private final PostStatus postStatus;
-        private final Long memberId;
+        private final String nickName;
         private final Long groupId;
-        private final List<PostAttachmentRespDto.GetPostAttachment> attachments;
+        private final String createdAt;
+        private final String modifiedAt;
+        private final List<PostAttachmentRespDto.GetPostAttachmentDto> attachments;
 
-        public GetPostDto(final Post post, final List<PostAttachmentRespDto.GetPostAttachment> attachments) {
+        public GetPostDto(final Post post, final Member member, final List<PostAttachmentRespDto.GetPostAttachmentDto> attachments) {
             this.postId = post.getId();
             this.title = post.getTitle();
             this.content = post.getContent();
             this.postStatus = post.getPostStatus();
-            this.memberId = post.getMember().getId();
-            this.groupId = post.getGroup().getId();
+            this.nickName = member.getNickname();
+            this.groupId = post.getGroupId();
+            this.createdAt = AppUtil.localDateTimeToString(post.getCreatedAt());
+            this.modifiedAt = AppUtil.localDateTimeToString(post.getModifiedAt());
             this.attachments = attachments;
         }
-
     }
 
+    @Getter
+    public static class GetPostListDto {
+        private final Long postId;
+        private final String title;
+        private final String content;
+        private final PostStatus postStatus;
+        private final Long memberId;
+        private final String createdAt;
+
+        public GetPostListDto(final Post post) {
+            this.postId = post.getId();
+            this.title = post.getTitle();
+            this.content = post.getContent();
+            this.postStatus = post.getPostStatus();
+            this.memberId = post.getMemberId();
+            this.createdAt = AppUtil.localDateTimeToString(post.getCreatedAt());
+        }
+    }
 }
