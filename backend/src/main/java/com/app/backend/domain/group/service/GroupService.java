@@ -1,12 +1,23 @@
 package com.app.backend.domain.group.service;
 
+import com.app.backend.domain.chat.room.entity.ChatRoom;
+import com.app.backend.domain.chat.room.repository.ChatRoomRepository;
 import com.app.backend.domain.group.dto.request.GroupRequest;
 import com.app.backend.domain.group.dto.response.GroupResponse;
 import com.app.backend.domain.group.entity.Group;
+import com.app.backend.domain.group.entity.GroupMembership;
+import com.app.backend.domain.group.entity.GroupRole;
+import com.app.backend.domain.group.entity.MembershipStatus;
 import com.app.backend.domain.group.entity.RecruitStatus;
 import com.app.backend.domain.group.exception.GroupErrorCode;
 import com.app.backend.domain.group.exception.GroupException;
+import com.app.backend.domain.group.exception.GroupMembershipErrorCode;
+import com.app.backend.domain.group.exception.GroupMembershipException;
+import com.app.backend.domain.group.repository.GroupMembershipRepository;
 import com.app.backend.domain.group.repository.GroupRepository;
+import com.app.backend.domain.member.entity.Member;
+import com.app.backend.domain.member.exception.MemberException;
+import com.app.backend.domain.member.repository.MemberRepository;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
@@ -21,7 +32,10 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class GroupService {
 
-    private final GroupRepository groupRepository;
+    private final GroupRepository           groupRepository;
+    private final GroupMembershipRepository groupMembershipRepository;
+    private final MemberRepository          memberRepository;
+    private final ChatRoomRepository        chatRoomRepository;
 
     /**
      * 모임(Group) 저장
@@ -31,7 +45,16 @@ public class GroupService {
      */
     @Transactional
     public Long createGroup(@NotNull final GroupRequest.Create dto) {
-        //TODO: 해당 모임을 생성하는 회원 검증 + 모임 생성 완료 후 모임의 관리자 권한 부여
+        //모임을 생성하는 회원 검증
+        //TODO: MemberException 예외 코드, 메시지 추가 필요
+//        Member member = memberRepository.findByIdAndDisabled(dto.getMemberId(), false)
+//                                        .orElseThrow(() -> new MemberException());
+        Member member = memberRepository.findById(dto.getMemberId())
+                                        .orElseThrow(MemberException::new);
+        if (member.isDisabled())
+            throw new MemberException();
+
+        //모임 엔티티 생성
         Group group = Group.builder()
                            .name(dto.getName())
                            .province(dto.getProvince())
@@ -41,7 +64,24 @@ public class GroupService {
                            .recruitStatus(RecruitStatus.RECRUITING)
                            .maxRecruitCount(dto.getMaxRecruitCount())
                            .build();
-        return groupRepository.save(group).getId();
+        groupRepository.save(group);
+
+        //모임 채팅방 엔티티 생성
+        ChatRoom chatRoom = ChatRoom.builder()
+                                    .group(group)
+                                    .build();
+        chatRoomRepository.save(chatRoom);
+        group.setChatRoom(chatRoom);
+
+        //모임 멤버십 엔티티 생성(회원-모임 연결 테이블, 모임 관리자 권한(LEADER) 부여)
+        GroupMembership groupMembership = GroupMembership.builder()
+                                                         .member(member)
+                                                         .group(group)
+                                                         .groupRole(GroupRole.LEADER)
+                                                         .build();
+        groupMembershipRepository.save(groupMembership);
+
+        return group.getId();
     }
 
     /**
@@ -175,29 +215,63 @@ public class GroupService {
      */
     @Transactional
     public GroupResponse.Detail modifyGroup(@NotNull final GroupRequest.Update dto) {
-        //TODO: 해당 모임을 수정하려는 회원 검증 + 모임의 관리자 권한 보유 유무 확인
+        GroupMembership groupMembership =
+                groupMembershipRepository.findByGroupIdAndMemberIdAndDisabled(dto.getGroupId(),
+                                                                              dto.getMemberId(),
+                                                                              false)
+                                         .orElseThrow(
+                                                 () -> new GroupMembershipException(
+                                                         GroupMembershipErrorCode.GROUP_MEMBERSHIP_NOT_FOUND
+                                                 )
+                                         );
+
+        //회원의 모임 내 권한 확인
+        if (groupMembership.getGroupRole() != GroupRole.LEADER
+            || groupMembership.getStatus() != MembershipStatus.APPROVED)
+            throw new GroupMembershipException(GroupMembershipErrorCode.GROUP_MEMBERSHIP_NO_PERMISSION);
+
         Group group = groupRepository.findByIdAndDisabled(dto.getGroupId(), false)
                                      .orElseThrow(() -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND));
+
         group.modifyName(dto.getName())
              .modifyRegion(dto.getProvince(), dto.getCity(), dto.getTown())
              .modifyDescription(dto.getDescription())
              .modifyRecruitStatus(RecruitStatus.valueOf(dto.getRecruitStatus()))
              .modifyMaxRecruitCount(dto.getMaxRecruitCount());
+
         return GroupResponse.toDetail(group);
     }
 
     /**
      * 모임(Group) 삭제(Soft Delete)
      *
-     * @param groupId - 모임 ID
+     * @param groupId  - 모임 ID
+     * @param memberId - 회원 ID
      * @return 모임 비활성화(disabled) 여부
      */
     @Transactional
-    public boolean deleteGroup(@NotNull @Min(1) final Long groupId) {
-        //TODO: 해당 모임을 삭제하려는 회원 검증 + 모임의 관리자 권한 보유 유무 확인
+    public boolean deleteGroup(@NotNull @Min(1) final Long groupId, @NotNull @Min(1) final Long memberId) {
+        GroupMembership groupMembership = groupMembershipRepository.findByGroupIdAndMemberIdAndDisabled(groupId,
+                                                                                                        memberId,
+                                                                                                        false)
+                                                                   .orElseThrow(
+                                                                           () -> new GroupMembershipException(
+                                                                                   GroupMembershipErrorCode
+                                                                                           .GROUP_MEMBERSHIP_NOT_FOUND
+                                                                           )
+                                                                   );
+
+        //회원의 모임 내 권한 확인
+        if (groupMembership.getGroupRole() != GroupRole.LEADER
+            || groupMembership.getStatus() != MembershipStatus.APPROVED)
+            throw new GroupMembershipException(GroupMembershipErrorCode.GROUP_MEMBERSHIP_NO_PERMISSION);
+
         Group group = groupRepository.findByIdAndDisabled(groupId, false)
                                      .orElseThrow(() -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND));
+
         group.deactivate();
+        //TODO: 모임에 가입한 회원, 채팅방 등 사후처리 필요
+
         return group.getDisabled();
     }
 

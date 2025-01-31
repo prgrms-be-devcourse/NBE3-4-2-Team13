@@ -5,6 +5,7 @@ import com.app.backend.domain.group.dto.request.GroupRequest;
 import com.app.backend.domain.group.dto.response.GroupResponse;
 import com.app.backend.domain.group.exception.GroupException;
 import com.app.backend.domain.group.service.GroupService;
+import com.app.backend.domain.member.entity.MemberDetails;
 import com.app.backend.global.dto.response.ApiResponse;
 import com.app.backend.global.error.exception.GlobalErrorCode;
 import jakarta.validation.Valid;
@@ -13,6 +14,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,10 +36,13 @@ public class GroupController {
 
     @PostMapping
     public ApiResponse<Void> createGroup(@RequestBody @Valid final GroupRequest.Create requestDto,
-                                         BindingResult bindingResult) {
-        //TODO: 시큐리티 컨텍스트 내 회원 인증 정보 확인 및 ID 추출
+                                         BindingResult bindingResult,
+                                         @AuthenticationPrincipal final MemberDetails memberDetails) {
         if (bindingResult.hasErrors())
             throw new GroupException(GlobalErrorCode.INVALID_INPUT_VALUE);
+
+        Long memberId = memberDetails.getId();
+        requestDto.setMemberId(memberId);
 
         Long createdGroupId = groupService.createGroup(requestDto);
 
@@ -62,11 +67,13 @@ public class GroupController {
     @PatchMapping("/{groupId}")
     public ApiResponse<Void> modifyGroup(@PathVariable @Min(1) final Long groupId,
                                          @RequestBody @Valid final GroupRequest.Update requestDto,
-                                         BindingResult bindingResult) {
-        //TODO: 해당 모임의 관리자 권한 유무 확인 필요
+                                         BindingResult bindingResult,
+                                         @AuthenticationPrincipal MemberDetails memberDetails) {
         if (bindingResult.hasErrors())
             throw new GroupException(GlobalErrorCode.INVALID_INPUT_VALUE);
 
+        Long memberId = memberDetails.getId();
+        requestDto.setMemberId(memberId);
         requestDto.setGroupId(groupId);
         GroupResponse.Detail updatedGroupDetail = groupService.modifyGroup(requestDto);
 
@@ -74,9 +81,9 @@ public class GroupController {
     }
 
     @DeleteMapping("/{groupId}")
-    public ApiResponse<Void> deleteGroup(@PathVariable @Min(1) final Long groupId) {
-        //TODO: 해당 모임의 관리자 권한 유무 확인 필요
-        boolean flag = groupService.deleteGroup(groupId);
+    public ApiResponse<Void> deleteGroup(@PathVariable @Min(1) final Long groupId,
+                                         @AuthenticationPrincipal MemberDetails memberDetails) {
+        boolean flag = groupService.deleteGroup(groupId, memberDetails.getId());
 
         if (!flag)
             throw new GroupException(GlobalErrorCode.INTERNAL_SERVER_ERROR);
