@@ -36,5 +36,5 @@ jobs:
           docker exec $(docker ps -q --filter "ancestor=redis:latest") redis-cli CONFIG GET notify-keyspace-events
       - name: Create file storage directory
         run: |
-          mkdir -p /uploads
-          chmod 777 /uploads
+          sudo mkdir -p /uploads
+          sudo chmod 777 /uploads
