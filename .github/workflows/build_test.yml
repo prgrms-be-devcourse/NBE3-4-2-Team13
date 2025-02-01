@@ -34,7 +34,10 @@ jobs:
         run: |
           docker exec $(docker ps -q --filter "ancestor=redis:latest") redis-cli CONFIG SET notify-keyspace-events Ex
           docker exec $(docker ps -q --filter "ancestor=redis:latest") redis-cli CONFIG GET notify-keyspace-events
-      - name: Create file storage directory
+
+      - name: Create file storage directory for tests
+        working-directory: ./backend
         run: |
-          sudo mkdir -p /testUploads
-          sudo chmod 777 /testUploads
+          mkdir -p testUploads
+          chmod 777 testUploads
+
