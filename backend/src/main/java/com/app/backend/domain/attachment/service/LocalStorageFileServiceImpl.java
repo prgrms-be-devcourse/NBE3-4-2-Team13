@@ -35,7 +35,6 @@ public class LocalStorageFileServiceImpl implements FileService {
             // 디렉토리가 존재하지 않으면 생성
             if (!Files.exists(dateDir)) {
                 Files.createDirectories(dateDir);
-                Files.setPosixFilePermissions(dateDir, PosixFilePermissions.fromString("rwxrwxrwx"));
             }
 
             String originalFileName = file.getOriginalFilename();
