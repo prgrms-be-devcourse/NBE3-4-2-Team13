@@ -64,8 +64,6 @@ public class PostReqDto {
         private PostStatus postStatus;
         @Positive
         private Long groupId;
-        @Positive
-        private Long memberId;
 
         public Post toEntity(Long memberId) {
             return Post
