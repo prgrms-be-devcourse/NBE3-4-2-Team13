@@ -1,7 +1,10 @@
 package com.app.backend.domain.member.exception;
 
-public class MemberException extends RuntimeException{
-	private MemberErrorCode errorCode;
-	private String message;
+import com.app.backend.global.error.exception.DomainErrorCode;
+import com.app.backend.global.error.exception.DomainException;
 
+public class MemberException extends DomainException {
+	public MemberException(DomainErrorCode domainErrorCode) {
+		super(domainErrorCode);
+	}
 }

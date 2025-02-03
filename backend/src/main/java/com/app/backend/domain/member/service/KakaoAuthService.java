@@ -4,6 +4,7 @@ import java.util.Map;
 
 import javax.security.sasl.AuthenticationException;
 
+import org.hibernate.service.spi.ServiceException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -20,6 +21,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 import com.app.backend.domain.member.dto.kakao.KakaoUserInfo;
 import com.app.backend.domain.member.dto.kakao.TokenDto;
 import com.app.backend.domain.member.entity.Member;
+import com.app.backend.domain.member.exception.MemberErrorCode;
+import com.app.backend.domain.member.exception.MemberException;
 import com.app.backend.domain.member.jwt.JwtProvider;
 import com.app.backend.domain.member.repository.MemberRepository;
 
@@ -94,7 +97,7 @@ public class KakaoAuthService {
 		if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null)
 			return (String) response.getBody().get("access_token");
 
-		throw new ServiceException("500", "카카오 토큰 발행 실패");
+		throw new MemberException(MemberErrorCode.MEMBER_FAILED_TO_KAKAO_TOKEN);
 	}
 
 	// 필수 동의항목 설정 필요
@@ -121,7 +124,7 @@ public class KakaoAuthService {
 			);
 		} catch (Exception e) {
 			log.error("카카오 API 호출 실패: {}", e.getMessage());
-			throw new ServiceException("500", "카카오 인증에 실패했습니다.");
+			throw new MemberException(MemberErrorCode.MEMBER_FAILED_TO_KAKAO_AUTH);
 		}
 	}
 

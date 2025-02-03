@@ -1,6 +1,5 @@
 package com.app.backend.domain.comment.service;
 
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -57,5 +56,22 @@ public class CommentService {
 
 		return CommentResponse.from(comment);
 
+	}
+
+	// 댓글 삭제
+	@Transactional
+	public void deleteComment(Long commentId, Long memberId) {
+
+		// 댓글 조회
+		Comment comment = commentRepository.findByIdAndDisabled(commentId, false)
+			.orElseThrow(() -> new CommentException(CommentErrorCode.COMMENT_NOT_FOUND));
+
+
+		// 댓글 작성자만 삭제 가능
+		if (!comment.getMember().getId().equals(memberId)) {
+			throw new CommentException(CommentErrorCode.COMMENT_ACCESS_DENIED);
+		}
+
+		comment.delete();
 	}
 }

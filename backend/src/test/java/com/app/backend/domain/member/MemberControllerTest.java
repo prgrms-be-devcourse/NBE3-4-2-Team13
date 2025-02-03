@@ -212,4 +212,41 @@ public class MemberControllerTest {
 			.andExpect(status().isOk())
 			.andDo(print());
 	}
+
+	@Test
+	@DisplayName("회원 탈퇴")
+	void 회원탈퇴() throws Exception {
+		// given
+		Member member = memberRepository.findByUsernameAndDisabled(setupUsername, false)
+			.orElseThrow(() -> new IllegalArgumentException("가입되지 않은 사용자입니다"));
+		String accessToken = "Bearer " + jwtProvider.generateAccessToken(member);
+
+		// when
+		mvc.perform(delete("/api/v1/members")
+				.header("Authorization", accessToken)
+				.contentType(MediaType.APPLICATION_JSON))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.isSuccess").value(true))
+			.andExpect(jsonPath("$.code").value("MEMBER_DELETE_SUCCESS"))
+			.andExpect(jsonPath("$.message").value("회원 탈퇴에 성공했습니다"))
+			.andDo(print());
+
+		// then
+		// disabled가 true로 변경되었는지 확인 (soft delete)
+		assertThrows(IllegalArgumentException.class, () -> 
+			memberRepository.findByUsernameAndDisabled(setupUsername, false)
+				.orElseThrow(() -> new IllegalArgumentException("가입되지 않은 사용자입니다"))
+		);
+
+		// disabled가 true인 회원이 존재하는지 확인
+		Member deletedMember = memberRepository.findByUsernameAndDisabled(setupUsername, true)
+			.orElseThrow(() -> new IllegalArgumentException("탈퇴한 회원을 찾을 수 없습니다"));
+
+		assertAll(
+			() -> assertTrue(deletedMember.isDisabled(), "회원이 비활성화되지 않았습니다"),
+			() -> assertEquals(member.getUsername(), deletedMember.getUsername(), "username이 변경되었습니다"),
+			() -> assertEquals(member.getNickname(), deletedMember.getNickname(), "nickname이 변경되었습니다"),
+			() -> assertEquals(member.getRole(), deletedMember.getRole(), "role이 변경되었습니다")
+		);
+	}
 }

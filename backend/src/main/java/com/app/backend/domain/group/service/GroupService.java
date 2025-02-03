@@ -16,6 +16,7 @@ import com.app.backend.domain.group.exception.GroupMembershipException;
 import com.app.backend.domain.group.repository.GroupMembershipRepository;
 import com.app.backend.domain.group.repository.GroupRepository;
 import com.app.backend.domain.member.entity.Member;
+import com.app.backend.domain.member.exception.MemberErrorCode;
 import com.app.backend.domain.member.exception.MemberException;
 import com.app.backend.domain.member.repository.MemberRepository;
 import jakarta.persistence.EntityManager;
@@ -51,9 +52,9 @@ public class GroupService {
      */
     @Transactional
     public Long createGroup(@NotNull final GroupRequest.Create dto) {
-        //모임을 생성하는 회원 검증
-        Member member = memberRepository.findByIdAndDisabled(dto.getMemberId(), false)
-                                        .orElseThrow(() -> new MemberException());
+        //모임을 생성하는 회원 조회
+        Member member = memberRepository.findById(dto.getMemberId())
+                                        .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
 
         //모임 엔티티 생성
         Group group = Group.builder()

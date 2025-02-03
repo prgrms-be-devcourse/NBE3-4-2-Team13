@@ -5,8 +5,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import java.nio.charset.StandardCharsets;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,12 +12,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.app.backend.domain.comment.entity.Comment;
 import com.app.backend.domain.comment.repository.CommentRepository;
 import com.app.backend.domain.member.entity.Member;
 import com.app.backend.domain.member.entity.MemberDetails;
@@ -40,13 +38,17 @@ public class CommentControllerTest {
 	private PostRepository postRepository;
 	@Autowired
 	private MemberRepository memberRepository;
+	@Autowired
+	private CommentRepository commentRepository;
 
+	private Post testPost;
 	private Long testPostId;
 	private Member testMember;
-
+	private MemberDetails memberDetails;
 
 	@BeforeEach
 	void setUp() {
+
 		// 테스트용
 		testMember = Member.builder()
 			.username("testUser")
@@ -55,10 +57,11 @@ public class CommentControllerTest {
 			.role("USER")
 			.disabled(false)
 			.build();
+
 		memberRepository.save(testMember);
+		memberDetails = new MemberDetails(testMember);
 
-
-		Post post = Post.builder()
+		testPost = Post.builder()
 			.title("테스트 게시글")
 			.content("테스트 내용")
 			.postStatus(PostStatus.PUBLIC)
@@ -66,14 +69,14 @@ public class CommentControllerTest {
 			.memberId(testMember.getId())
 			.build();
 
-		Post savedPost = postRepository.save(post);
-		testPostId = savedPost.getId();
+		testPost = postRepository.save(testPost);
+		testPostId = testPost.getId();
+
 	}
 
 	@Test
 	@DisplayName("댓글 작성")
 	void createComment() throws Exception {
-		MemberDetails memberDetails = new MemberDetails(testMember);
 
 		ResultActions resultActions = mvc
 			.perform(
@@ -102,7 +105,6 @@ public class CommentControllerTest {
 	@DisplayName("댓글 작성 실패 (내용 공백)")
 	void createComment2() throws Exception {
 
-		MemberDetails memberDetails = new MemberDetails(testMember);
 
 		ResultActions resultActions = mvc
 			.perform(
@@ -126,4 +128,98 @@ public class CommentControllerTest {
 	}
 
 
+	@Test
+	@DisplayName("댓글 삭제")
+	void deleteComment() throws Exception {
+
+		Comment testComment = Comment.builder()
+			.content("test")
+			.post(testPost)
+			.member(testMember)
+			.build();
+		testComment = commentRepository.save(testComment);
+
+		ResultActions resultActions = mvc
+			.perform(
+				delete("/api/v1/comment/" + testComment.getId())
+					.with(user(memberDetails))
+			)
+			.andDo(print());
+
+		resultActions
+			.andExpect(handler().handlerType(CommentController.class))
+			.andExpect(handler().methodName("deleteComment"))
+			.andExpect(status().isNoContent())
+			.andExpect(jsonPath("$.isSuccess").value(true))
+			.andExpect(jsonPath("$.code").value("204"))
+			.andExpect(jsonPath("$.message").exists());
+
+
+	}
+
+
+	@Test
+	@DisplayName("댓글 삭제 실패 (존재하지 않는 댓글)")
+	void deleteComment2() throws Exception {
+
+		ResultActions resultActions = mvc
+			.perform(
+				delete("/api/v1/comment/10000")
+					.with(user(memberDetails))
+			)
+			.andDo(print());
+
+		resultActions
+			.andExpect(handler().handlerType(CommentController.class))
+			.andExpect(handler().methodName("deleteComment"))
+			.andExpect(status().isNotFound())
+			.andExpect(jsonPath("$.isSuccess").value(false))
+			.andExpect(jsonPath("$.code").value("CM001"))
+			.andExpect(jsonPath("$.message").value("댓글을 찾을 수 없습니다"));
+	}
+
+	@Test
+	@DisplayName("댓글 삭제 실패 (작성자만 삭제 가능)")
+	void deleteComment3() throws Exception {
+
+		Comment testComment = Comment.builder()
+			.content("test")
+			.post(testPost)
+			.member(testMember)
+			.build();
+		testComment = commentRepository.save(testComment);
+
+		// 다른 사용자 생성
+		Member Member2 = Member.builder()
+			.username("other")
+			.password("password")
+			.nickname("다른사용자")
+			.role("USER")
+			.build();
+
+		memberRepository.save(Member2);
+		MemberDetails otherMemberDetails = new MemberDetails(Member2);
+
+		ResultActions resultActions = mvc
+			.perform(
+				delete("/api/v1/comment/" + testComment.getId())
+					.with(user(otherMemberDetails))
+
+			)
+			.andDo(print());
+
+		resultActions
+			.andExpect(handler().handlerType(CommentController.class))
+			.andExpect(handler().methodName("deleteComment"))
+			.andExpect(status().isForbidden())
+			.andExpect(jsonPath("$.isSuccess").value(false))
+			.andExpect(jsonPath("$.code").value("CM003"))
+			.andExpect(jsonPath("$.message").value("댓글에 대한 권한이 없습니다"));
+
+	}
+
+
 }
+
+
+

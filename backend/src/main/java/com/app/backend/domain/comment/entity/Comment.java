@@ -39,6 +39,10 @@ public class Comment extends BaseEntity {
 	private Member member;
 
 
+	public void delete() {
+		this.deactivate();
+	}
+
 
 
 }
