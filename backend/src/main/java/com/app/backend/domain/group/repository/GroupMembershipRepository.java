@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface GroupMembershipRepository extends JpaRepository<GroupMembership, GroupMembershipId>,
                                                    GroupMembershipRepositoryCustom {
@@ -49,5 +52,9 @@ public interface GroupMembershipRepository extends JpaRepository<GroupMembership
     int countByGroupIdAndStatus(Long groupId, MembershipStatus status);
 
     int countByGroupIdAndStatusAndDisabled(Long groupId, MembershipStatus status, Boolean disabled);
+
+    @Modifying
+    @Query("UPDATE GroupMembership g SET g.disabled = :disabled WHERE g.groupId = :groupId")
+    int updateDisabledForAllGroupMembership(@Param("groupId") Long groupId, @Param("disabled") Boolean disabled);
 
 }
