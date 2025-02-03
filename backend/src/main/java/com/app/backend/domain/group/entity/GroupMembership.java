@@ -47,7 +47,7 @@ public class GroupMembership extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private MembershipStatus status;    //모임 내 회원의 상태: PENDING, APPROVED, REJECTED
+    private MembershipStatus status;    //모임 내 회원의 상태: PENDING, APPROVED, REJECTED, LEAVE
 
     @Builder
     public GroupMembership(@NotNull final Member member,
