@@ -2,7 +2,9 @@ package com.app.backend.domain.post.service;
 
 import com.app.backend.domain.attachment.exception.FileErrorCode;
 import com.app.backend.domain.attachment.exception.FileException;
-import com.app.backend.domain.attachment.service.FileService;
+import com.app.backend.domain.group.entity.*;
+import com.app.backend.domain.group.repository.GroupMembershipRepository;
+import com.app.backend.domain.group.repository.GroupRepository;
 import com.app.backend.domain.member.entity.Member;
 import com.app.backend.domain.member.repository.MemberRepository;
 import com.app.backend.domain.post.dto.req.PostReqDto;
@@ -50,10 +52,10 @@ public class PostServiceTest {
     private PostService postService;
 
     @Autowired
-    private FileService fileService;
+    private PostRepository postRepository;
 
     @Autowired
-    private PostRepository postRepository;
+    private GroupRepository groupRepository;
 
     @Autowired
     private MemberRepository memberRepository;
@@ -61,24 +63,47 @@ public class PostServiceTest {
     @Autowired
     private PostAttachmentRepository postAttachmentRepository;
 
-    @Value("${spring.file.base-dir}")
+    @Autowired
+    private GroupMembershipRepository groupMembershipRepository;
+
     private static String BASE_DIR;
 
     @BeforeAll
-    public static void setUp(@Value("${spring.file.base-dir}") String baseDir) {
+    static void setUpAll(@Value("${spring.file.base-dir}") String baseDir) {
         BASE_DIR = baseDir;
+    }
+
+    @BeforeEach
+    void setUp() {
+        autoIncrementReset();
+        dataSetting();
+        em.flush();
+        em.clear();
     }
 
     private void autoIncrementReset() {
         em.createNativeQuery("ALTER TABLE tbl_posts ALTER COLUMN post_id RESTART WITH 1").executeUpdate();
         em.createNativeQuery("ALTER TABLE tbl_members ALTER COLUMN member_id RESTART WITH 1").executeUpdate();
+        em.createNativeQuery("ALTER TABLE tbl_groups ALTER COLUMN group_id RESTART WITH 1").executeUpdate();
         em.createNativeQuery("ALTER TABLE tbl_post_attachments ALTER COLUMN attachment_id RESTART WITH 1").executeUpdate();
     }
 
-    @BeforeEach
-    public void setUp() {
-        autoIncrementReset();
-        em.clear();
+    private void dataSetting(){
+        Member member1 = memberRepository.save(Member.builder().username("Test member1").nickname("Test Nickname 1").build());
+        Member member2 = memberRepository.save(Member.builder().username("Test member2").nickname("Test Nickname 2").build());
+
+        Group group = groupRepository.save(Group.builder()
+                .name("test")
+                .province("test province")
+                .city("test city")
+                .town("test town")
+                .description("test description")
+                .recruitStatus(RecruitStatus.RECRUITING)
+                .maxRecruitCount(10)
+                .build());
+
+        groupMembershipRepository.save(GroupMembership.builder().member(member1).group(group).groupRole(GroupRole.LEADER).build());
+        groupMembershipRepository.save(GroupMembership.builder().member(member2).group(group).groupRole(GroupRole.PARTICIPANT).build());
     }
 
     private byte[] generateRandomBytes(int size) {
@@ -96,7 +121,7 @@ public class PostServiceTest {
                 new MockMultipartFile("file2", "test2.jpg", "image/jpeg", "file2-content".getBytes())
         };
 
-        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L, 1L);
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
 
         // When
         Post savedPost = postService.savePost(1L, savePostDto, files);
@@ -114,7 +139,7 @@ public class PostServiceTest {
     @DisplayName("Success : 게시글 저장 - 첨부파일 x")
     void savePost_Success2() {
         // Given
-        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L, 1L);
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
 
         // When
         Post savedPost = postService.savePost(1L, savePostDto, null);
@@ -129,6 +154,104 @@ public class PostServiceTest {
     }
 
     @Test
+    @DisplayName("Success : 게시글 저장 - MembershipStatus.APPROVED")
+    void savePost_Success3() {
+        // Given
+        GroupMembership membership = groupMembershipRepository.findByGroupIdAndMemberId(1L, 2L).get();
+        em.persist(membership);
+        membership.modifyStatus(MembershipStatus.APPROVED);
+
+        em.flush();
+        em.clear();
+
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
+
+        // When
+        Post savedPost = postService.savePost(1L, savePostDto, null);
+
+        // Then
+        assertNotNull(savedPost.getId());
+        assertEquals("새로운 게시글", savedPost.getTitle());
+        assertEquals("새로운 내용", savedPost.getContent());
+
+        List<PostAttachment> attachments = postAttachmentRepository.findByPostId(savedPost.getId());
+        assertEquals(0, attachments.size());
+    }
+
+    @Test
+    @DisplayName("Fail : 게시글 저장 - MembershipStatus.PENDING")
+    void savePost_Fail1() {
+        // Given
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
+
+        // Then
+        assertThatThrownBy(() ->  postService.savePost(2L, savePostDto, null))
+                .isInstanceOf(PostException.class)
+                .hasFieldOrPropertyWithValue("domainErrorCode", PostErrorCode.POST_UNAUTHORIZATION)
+                .hasMessage(PostErrorCode.POST_UNAUTHORIZATION.getMessage());
+    }
+
+    @Test
+    @DisplayName("Fail : 게시글 저장 - MembershipStatus.REJECTED")
+    void savePost_Fail2() {
+        // Given
+        GroupMembership membership = groupMembershipRepository.findByGroupIdAndMemberId(1L, 2L).get();
+        em.persist(membership);
+        membership.modifyStatus(MembershipStatus.REJECTED);
+
+        em.flush();
+        em.clear();
+
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
+
+        // Then
+        assertThatThrownBy(() ->  postService.savePost(2L, savePostDto, null))
+                .isInstanceOf(PostException.class)
+                .hasFieldOrPropertyWithValue("domainErrorCode", PostErrorCode.POST_UNAUTHORIZATION)
+                .hasMessage(PostErrorCode.POST_UNAUTHORIZATION.getMessage());
+    }
+
+    @Test
+    @DisplayName("Fail : 게시글 저장 - MembershipStatus.LEAVE")
+    void savePost_Fail3() {
+        // Given
+        GroupMembership membership = groupMembershipRepository.findByGroupIdAndMemberId(1L, 2L).get();
+        em.persist(membership);
+        membership.modifyStatus(MembershipStatus.LEAVE);
+
+        em.flush();
+        em.clear();
+
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
+
+        // Then
+        assertThatThrownBy(() ->  postService.savePost(2L, savePostDto, null))
+                .isInstanceOf(PostException.class)
+                .hasFieldOrPropertyWithValue("domainErrorCode", PostErrorCode.POST_UNAUTHORIZATION)
+                .hasMessage(PostErrorCode.POST_UNAUTHORIZATION.getMessage());
+    }
+
+    @Test
+    @DisplayName("Fail : 게시글 저장 - MembershipStatus.APPROVE -> create type NOTICE")
+    void savePost_Fail4() {
+        // Given
+        GroupMembership membership = groupMembershipRepository.findByGroupIdAndMemberId(1L, 2L).get();
+        em.persist(membership);
+        membership.modifyStatus(MembershipStatus.APPROVED);
+
+        em.flush();
+        em.clear();
+
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.NOTICE, 1L);
+
+        // Then
+        assertThatThrownBy(() ->  postService.savePost(2L, savePostDto, null))
+                .isInstanceOf(PostException.class)
+                .hasFieldOrPropertyWithValue("domainErrorCode", PostErrorCode.POST_UNAUTHORIZATION)
+                .hasMessage(PostErrorCode.POST_UNAUTHORIZATION.getMessage());
+    }
+
+    @Test
     @DisplayName("Success : 게시글 수정 - 파일 추가")
     void updatePost_Success1() {
         // Given
@@ -137,7 +260,7 @@ public class PostServiceTest {
                 new MockMultipartFile("file2", "test2.jpg", "image/jpeg", "file2-content".getBytes())
         };
 
-        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L, 1L);
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
 
         postService.savePost(1L, savePostDto, files);
 
@@ -168,7 +291,7 @@ public class PostServiceTest {
                 new MockMultipartFile("file2", "test2.jpg", "image/jpeg", "file2-content".getBytes())
         };
 
-        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L, 1L);
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
 
         postService.savePost(1L, savePostDto, files);
 
@@ -194,15 +317,56 @@ public class PostServiceTest {
     }
 
     @Test
+    @DisplayName("Success : 게시글 수정 - GroupRole.LEADER")
+    void updatePost_Success3() {
+        // Given
+        GroupMembership membership = groupMembershipRepository.findByGroupIdAndMemberId(1L, 2L).get();
+        em.persist(membership);
+        membership.modifyStatus(MembershipStatus.APPROVED);
+
+        em.flush();
+        em.clear();
+
+        MultipartFile[] files = {
+                new MockMultipartFile("file1", "test1.jpg", "image/jpeg", "file1-content".getBytes()),
+                new MockMultipartFile("file2", "test2.jpg", "image/jpeg", "file2-content".getBytes())
+        };
+
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
+
+        postService.savePost(2L, savePostDto, files);
+
+        // When
+        MultipartFile[] newFiles = {
+                new MockMultipartFile("file3", "test3.jpg", "image/jpeg", "file3-content".getBytes())
+        };
+
+        List<Long> removeList = new ArrayList<>();
+        removeList.add(1L);
+
+        PostReqDto.ModifyPostDto modifyPostDto =
+                new PostReqDto.ModifyPostDto(1L, "수정된 제목", "수정된 내용", PostStatus.PRIVATE, 0L, null, removeList);
+
+        Post updatedPost = postService.updatePost(1L, 1L, modifyPostDto, newFiles);
+
+        // Then
+        assertEquals("수정된 제목", updatedPost.getTitle());
+        assertEquals("수정된 내용", updatedPost.getContent());
+
+        List<PostAttachment> attachments = postAttachmentRepository.findByPostId(updatedPost.getId());
+        assertEquals(2, attachments.size());
+    }
+
+    @Test
     @DisplayName("Fail : 게시글 수정 - 잘못된 post id")
-    void updatePost_Fail() {
+    void updatePost_Fail1() {
         // Given
         MultipartFile[] files = {
                 new MockMultipartFile("file1", "test1.jpg", "image/jpeg", "file1-content".getBytes()),
                 new MockMultipartFile("file2", "test2.jpg", "image/jpeg", "file2-content".getBytes())
         };
 
-        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L, 1L);
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
 
         postService.savePost(1L, savePostDto, files);
 
@@ -233,7 +397,7 @@ public class PostServiceTest {
                 new MockMultipartFile("file2", "test2.jpg", "image/jpeg", generateRandomBytes(2 * 1024 * 1024))
         };
 
-        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L, 1L);
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
 
         postService.savePost(1L, savePostDto, files);
 
@@ -253,14 +417,148 @@ public class PostServiceTest {
     }
 
     @Test
+    @DisplayName("Fail : 게시글 수정 - MembershipStatus.APPROVED & 게시물 수정 권한 x")
+    void updatePost_Fail3() {
+        // Given
+        GroupMembership membership = groupMembershipRepository.findByGroupIdAndMemberId(1L, 2L).get();
+        em.persist(membership);
+        membership.modifyStatus(MembershipStatus.APPROVED);
+
+        em.flush();
+        em.clear();
+
+        MultipartFile[] files = {
+                new MockMultipartFile("file1", "test1.jpg", "image/jpeg", "file1-content".getBytes()),
+                new MockMultipartFile("file2", "test2.jpg", "image/jpeg", "file2-content".getBytes())
+        };
+
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
+
+        postService.savePost(1L, savePostDto, files);
+
+        // When
+        MultipartFile[] newFiles = {
+                new MockMultipartFile("file3", "test3.jpg", "image/jpeg", "file3-content".getBytes())
+        };
+
+        PostReqDto.ModifyPostDto modifyPostDto =
+                new PostReqDto.ModifyPostDto(1L, "수정된 제목", "수정된 내용", PostStatus.PRIVATE, 0L, null, null);
+
+        // Then
+        assertThatThrownBy(() -> postService.updatePost(2L, 1L, modifyPostDto, newFiles))
+                .isInstanceOf(PostException.class)
+                .hasFieldOrPropertyWithValue("domainErrorCode", PostErrorCode.POST_UNAUTHORIZATION)
+                .hasMessage(PostErrorCode.POST_UNAUTHORIZATION.getMessage());
+    }
+
+    @Test
+    @DisplayName("Fail : 게시글 수정 - MembershipStatus.REJECTED")
+    void updatePost_Fail4() {
+        // Given
+        GroupMembership membership = groupMembershipRepository.findByGroupIdAndMemberId(1L, 2L).get();
+        em.persist(membership);
+        membership.modifyStatus(MembershipStatus.REJECTED);
+
+        em.flush();
+        em.clear();
+
+        MultipartFile[] files = {
+                new MockMultipartFile("file1", "test1.jpg", "image/jpeg", "file1-content".getBytes()),
+                new MockMultipartFile("file2", "test2.jpg", "image/jpeg", "file2-content".getBytes())
+        };
+
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
+
+        postService.savePost(1L, savePostDto, files);
+
+        // When
+        MultipartFile[] newFiles = {
+                new MockMultipartFile("file3", "test3.jpg", "image/jpeg", "file3-content".getBytes())
+        };
+
+        PostReqDto.ModifyPostDto modifyPostDto =
+                new PostReqDto.ModifyPostDto(1L, "수정된 제목", "수정된 내용", PostStatus.PRIVATE, 0L, null, null);
+
+        // Then
+        assertThatThrownBy(() -> postService.updatePost(2L, 1L, modifyPostDto, newFiles))
+                .isInstanceOf(PostException.class)
+                .hasFieldOrPropertyWithValue("domainErrorCode", PostErrorCode.POST_UNAUTHORIZATION)
+                .hasMessage(PostErrorCode.POST_UNAUTHORIZATION.getMessage());
+    }
+
+    @Test
+    @DisplayName("Fail : 게시글 수정 - MembershipStatus.LEAVE")
+    void updatePost_Fail5() {
+        // Given
+        GroupMembership membership = groupMembershipRepository.findByGroupIdAndMemberId(1L, 2L).get();
+        em.persist(membership);
+        membership.modifyStatus(MembershipStatus.LEAVE);
+
+        em.flush();
+        em.clear();
+
+        MultipartFile[] files = {
+                new MockMultipartFile("file1", "test1.jpg", "image/jpeg", "file1-content".getBytes()),
+                new MockMultipartFile("file2", "test2.jpg", "image/jpeg", "file2-content".getBytes())
+        };
+
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
+
+        postService.savePost(1L, savePostDto, files);
+
+        // When
+        MultipartFile[] newFiles = {
+                new MockMultipartFile("file3", "test3.jpg", "image/jpeg", "file3-content".getBytes())
+        };
+
+        PostReqDto.ModifyPostDto modifyPostDto =
+                new PostReqDto.ModifyPostDto(1L, "수정된 제목", "수정된 내용", PostStatus.PRIVATE, 0L, null, null);
+
+        // Then
+        assertThatThrownBy(() -> postService.updatePost(2L, 1L, modifyPostDto, newFiles))
+                .isInstanceOf(PostException.class)
+                .hasFieldOrPropertyWithValue("domainErrorCode", PostErrorCode.POST_UNAUTHORIZATION)
+                .hasMessage(PostErrorCode.POST_UNAUTHORIZATION.getMessage());
+    }
+
+    @Test
+    @DisplayName("Fail : 게시글 수정 - MembershipStatus.PENDING")
+    void updatePost_Fail6() {
+        // Given
+        MultipartFile[] files = {
+                new MockMultipartFile("file1", "test1.jpg", "image/jpeg", "file1-content".getBytes()),
+                new MockMultipartFile("file2", "test2.jpg", "image/jpeg", "file2-content".getBytes())
+        };
+
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
+
+        postService.savePost(1L, savePostDto, files);
+
+        // When
+        MultipartFile[] newFiles = {
+                new MockMultipartFile("file3", "test3.jpg", "image/jpeg", "file3-content".getBytes())
+        };
+
+        PostReqDto.ModifyPostDto modifyPostDto =
+                new PostReqDto.ModifyPostDto(1L, "수정된 제목", "수정된 내용", PostStatus.PRIVATE, 0L, null, null);
+
+        // Then
+        assertThatThrownBy(() -> postService.updatePost(2L, 1L, modifyPostDto, newFiles))
+                .isInstanceOf(PostException.class)
+                .hasFieldOrPropertyWithValue("domainErrorCode", PostErrorCode.POST_UNAUTHORIZATION)
+                .hasMessage(PostErrorCode.POST_UNAUTHORIZATION.getMessage());
+    }
+
+    @Test
     @DisplayName("Success : 게시물 삭제")
-    public void deletePost_Success() {
+    public void deletePost_Success1() {
+        // Given
         MultipartFile[] files = {
                 new MockMultipartFile("file1", "test1.jpg", "image/jpeg", generateRandomBytes(2 * 1024 * 1024)),
                 new MockMultipartFile("file2", "test2.jpg", "image/jpeg", generateRandomBytes(2 * 1024 * 1024))
         };
 
-        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L, 1L);
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
 
         postService.savePost(1L, savePostDto, files);
 
@@ -275,22 +573,186 @@ public class PostServiceTest {
     }
 
     @Test
+    @DisplayName("Success : 게시물 삭제 - GroupRole.LEADER")
+    public void deletePost_Success2() {
+        // Given
+        GroupMembership membership = groupMembershipRepository.findByGroupIdAndMemberId(1L, 2L).get();
+        em.persist(membership);
+        membership.modifyStatus(MembershipStatus.APPROVED);
+        em.flush();
+        em.clear();
+
+        MultipartFile[] files = {
+                new MockMultipartFile("file1", "test1.jpg", "image/jpeg", generateRandomBytes(2 * 1024 * 1024)),
+                new MockMultipartFile("file2", "test2.jpg", "image/jpeg", generateRandomBytes(2 * 1024 * 1024))
+        };
+
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
+
+        postService.savePost(2L, savePostDto, files);
+
+        // When
+        postService.deletePost(1L, 1L);
+
+        // Then
+        assertThatThrownBy(() -> postService.deletePost(1L, 1L))
+                .isInstanceOf(PostException.class)
+                .hasFieldOrPropertyWithValue("domainErrorCode", PostErrorCode.POST_NOT_FOUND)
+                .hasMessage(PostErrorCode.POST_NOT_FOUND.getMessage());
+    }
+
+    @Test
+    @DisplayName("Fail : 게시물 삭제 - MembershipStatus.APPROVED")
+    public void deletePost_Fail1() {
+        // Given
+        GroupMembership membership = groupMembershipRepository.findByGroupIdAndMemberId(1L, 2L).get();
+        em.persist(membership);
+        membership.modifyStatus(MembershipStatus.APPROVED);
+        em.flush();
+        em.clear();
+
+        MultipartFile[] files = {
+                new MockMultipartFile("file1", "test1.jpg", "image/jpeg", generateRandomBytes(2 * 1024 * 1024)),
+                new MockMultipartFile("file2", "test2.jpg", "image/jpeg", generateRandomBytes(2 * 1024 * 1024))
+        };
+
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
+
+        postService.savePost(1L, savePostDto, files);
+
+        // Then
+        assertThatThrownBy(() -> postService.deletePost(2L, 1L))
+                .isInstanceOf(PostException.class)
+                .hasFieldOrPropertyWithValue("domainErrorCode", PostErrorCode.POST_UNAUTHORIZATION)
+                .hasMessage(PostErrorCode.POST_UNAUTHORIZATION.getMessage());
+    }
+
+    @Test
+    @DisplayName("Fail : 게시물 삭제 - MembershipStatus.REJECTED")
+    public void deletePost_Fail2() {
+        // Given
+        GroupMembership membership = groupMembershipRepository.findByGroupIdAndMemberId(1L, 2L).get();
+        em.persist(membership);
+        membership.modifyStatus(MembershipStatus.REJECTED);
+        em.flush();
+        em.clear();
+
+        MultipartFile[] files = {
+                new MockMultipartFile("file1", "test1.jpg", "image/jpeg", generateRandomBytes(2 * 1024 * 1024)),
+                new MockMultipartFile("file2", "test2.jpg", "image/jpeg", generateRandomBytes(2 * 1024 * 1024))
+        };
+
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
+
+        postService.savePost(1L, savePostDto, files);
+
+        // Then
+        assertThatThrownBy(() -> postService.deletePost(2L, 1L))
+                .isInstanceOf(PostException.class)
+                .hasFieldOrPropertyWithValue("domainErrorCode", PostErrorCode.POST_UNAUTHORIZATION)
+                .hasMessage(PostErrorCode.POST_UNAUTHORIZATION.getMessage());
+    }
+
+    @Test
+    @DisplayName("Fail : 게시물 삭제 - MembershipStatus.LEAVE")
+    public void deletePost_Fail3() {
+        // Given
+        GroupMembership membership = groupMembershipRepository.findByGroupIdAndMemberId(1L, 2L).get();
+        em.persist(membership);
+        membership.modifyStatus(MembershipStatus.LEAVE);
+        em.flush();
+        em.clear();
+
+        MultipartFile[] files = {
+                new MockMultipartFile("file1", "test1.jpg", "image/jpeg", generateRandomBytes(2 * 1024 * 1024)),
+                new MockMultipartFile("file2", "test2.jpg", "image/jpeg", generateRandomBytes(2 * 1024 * 1024))
+        };
+
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
+
+        postService.savePost(1L, savePostDto, files);
+
+        // Then
+        assertThatThrownBy(() -> postService.deletePost(2L, 1L))
+                .isInstanceOf(PostException.class)
+                .hasFieldOrPropertyWithValue("domainErrorCode", PostErrorCode.POST_UNAUTHORIZATION)
+                .hasMessage(PostErrorCode.POST_UNAUTHORIZATION.getMessage());
+    }
+
+    @Test
+    @DisplayName("Fail : 게시물 삭제 - MembershipStatus.PENDING")
+    public void deletePost_Fail4() {
+        // Given
+        GroupMembership membership = groupMembershipRepository.findByGroupIdAndMemberId(1L, 2L).get();
+        em.persist(membership);
+        membership.modifyStatus(MembershipStatus.LEAVE);
+        em.flush();
+        em.clear();
+
+        MultipartFile[] files = {
+                new MockMultipartFile("file1", "test1.jpg", "image/jpeg", generateRandomBytes(2 * 1024 * 1024)),
+                new MockMultipartFile("file2", "test2.jpg", "image/jpeg", generateRandomBytes(2 * 1024 * 1024))
+        };
+
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
+
+        postService.savePost(1L, savePostDto, files);
+
+        // Then
+        assertThatThrownBy(() -> postService.deletePost(2L, 1L))
+                .isInstanceOf(PostException.class)
+                .hasFieldOrPropertyWithValue("domainErrorCode", PostErrorCode.POST_UNAUTHORIZATION)
+                .hasMessage(PostErrorCode.POST_UNAUTHORIZATION.getMessage());
+    }
+
+    @Test
+    @DisplayName("Fail : 게시물 삭제 - MembershipStatus.APPROVED -> MembershipStatus.LEAVE")
+    public void deletePost_Fail5() {
+        // Given
+        GroupMembership approvedMembership = groupMembershipRepository.findByGroupIdAndMemberId(1L, 2L).get();
+        em.persist(approvedMembership);
+        approvedMembership.modifyStatus(MembershipStatus.APPROVED);
+        em.flush();
+        em.clear();
+
+        MultipartFile[] files = {
+                new MockMultipartFile("file1", "test1.jpg", "image/jpeg", generateRandomBytes(2 * 1024 * 1024)),
+                new MockMultipartFile("file2", "test2.jpg", "image/jpeg", generateRandomBytes(2 * 1024 * 1024))
+        };
+
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
+
+        postService.savePost(2L, savePostDto, files);
+
+        GroupMembership leaveMembership = groupMembershipRepository.findByGroupIdAndMemberId(1L, 2L).get();
+        em.persist(leaveMembership);
+        leaveMembership.modifyStatus(MembershipStatus.LEAVE);
+        em.flush();
+        em.clear();
+
+        // Then
+        assertThatThrownBy(() -> postService.deletePost(2L, 1L))
+                .isInstanceOf(PostException.class)
+                .hasFieldOrPropertyWithValue("domainErrorCode", PostErrorCode.POST_UNAUTHORIZATION)
+                .hasMessage(PostErrorCode.POST_UNAUTHORIZATION.getMessage());
+    }
+
+    @Test
     @DisplayName("Success : 게시글 불러오기")
-    void getPost_success1() {
+    void getPost_Success1() {
         // Given
         MultipartFile[] files = {
                 new MockMultipartFile("file1", "test1.jpg", "image/jpeg", "file1-content".getBytes()),
                 new MockMultipartFile("file2", "test2.jpg", "image/jpeg", "file2-content".getBytes())
         };
 
-        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L, 1L);
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
 
         Post savedPost = postService.savePost(1L, savePostDto, files);
         Member savedMember = memberRepository.save(Member.builder().username("test").nickname("test").build());
 
         // When
-        PostRespDto.GetPostDto respDto = postService.getPost(1L,1L);
-
+        PostRespDto.GetPostDto respDto = postService.getPost(1L, 1L);
 
         // Then
         assertEquals(savedPost.getId(), respDto.getPostId());
@@ -302,21 +764,127 @@ public class PostServiceTest {
     }
 
     @Test
-    @DisplayName("Fail : 삭제된 게시글 불러오기")
-    void getPost_Fail() {
+    @DisplayName("Success : 게시글 불러오기 - MembershipStatus.APPROVED")
+    void getPost_Success2() {
+        // Given
+        GroupMembership approvedMembership = groupMembershipRepository.findByGroupIdAndMemberId(1L, 2L).get();
+        em.persist(approvedMembership);
+        approvedMembership.modifyStatus(MembershipStatus.APPROVED);
+        em.flush();
+        em.clear();
+
+        MultipartFile[] files = {
+                new MockMultipartFile("file1", "test1.jpg", "image/jpeg", "file1-content".getBytes()),
+                new MockMultipartFile("file2", "test2.jpg", "image/jpeg", "file2-content".getBytes())
+        };
+
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PRIVATE, 1L);
+
+        Post savedPost = postService.savePost(1L, savePostDto, files);
+        Member savedMember = memberRepository.save(Member.builder().username("test").nickname("test").build());
+
+        // When
+        PostRespDto.GetPostDto respDto = postService.getPost(1L, 2L);
+
+        // Then
+        assertEquals(savedPost.getId(), respDto.getPostId());
+        assertEquals(savedPost.getTitle(), respDto.getTitle());
+        assertEquals(savedPost.getContent(), respDto.getContent());
+        assertEquals(savedPost.getPostStatus(), respDto.getPostStatus());
+        assertEquals(savedPost.getGroupId(), respDto.getGroupId());
+        assertEquals(2, respDto.getAttachments().size());
+    }
+
+    @Test
+    @DisplayName("Fail : 게시글 불러오기 - MembershipStatus.PENDING")
+    void getPost_Fail1() {
         // Given
         MultipartFile[] files = {
                 new MockMultipartFile("file1", "test1.jpg", "image/jpeg", "file1-content".getBytes()),
                 new MockMultipartFile("file2", "test2.jpg", "image/jpeg", "file2-content".getBytes())
         };
 
-        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L, 1L);
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PRIVATE, 1L);
 
         Post savedPost = postService.savePost(1L, savePostDto, files);
         Member savedMember = memberRepository.save(Member.builder().username("test").nickname("test").build());
 
+        // Then
+        assertThatThrownBy(() -> postService.getPost(1L, 2L))
+                .isInstanceOf(PostException.class)
+                .hasFieldOrPropertyWithValue("domainErrorCode", PostErrorCode.POST_UNAUTHORIZATION)
+                .hasMessage(PostErrorCode.POST_UNAUTHORIZATION.getMessage());
+    }
+
+    @Test
+    @DisplayName("Fail : 게시글 불러오기 - MembershipStatus.REJECTED")
+    void getPost_Fail2() {
+        // Given
+        GroupMembership approvedMembership = groupMembershipRepository.findByGroupIdAndMemberId(1L, 2L).get();
+        em.persist(approvedMembership);
+        approvedMembership.modifyStatus(MembershipStatus.REJECTED);
+        em.flush();
+        em.clear();
+
+        MultipartFile[] files = {
+                new MockMultipartFile("file1", "test1.jpg", "image/jpeg", "file1-content".getBytes()),
+                new MockMultipartFile("file2", "test2.jpg", "image/jpeg", "file2-content".getBytes())
+        };
+
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PRIVATE, 1L);
+
+        Post savedPost = postService.savePost(1L, savePostDto, files);
+        Member savedMember = memberRepository.save(Member.builder().username("test").nickname("test").build());
+
+        // Then
+        assertThatThrownBy(() -> postService.getPost(1L, 2L))
+                .isInstanceOf(PostException.class)
+                .hasFieldOrPropertyWithValue("domainErrorCode", PostErrorCode.POST_UNAUTHORIZATION)
+                .hasMessage(PostErrorCode.POST_UNAUTHORIZATION.getMessage());
+    }
+
+    @Test
+    @DisplayName("Fail : 게시글 불러오기 - MembershipStatus.LEAVE")
+    void getPost_Fail3() {
+        // Given
+        GroupMembership approvedMembership = groupMembershipRepository.findByGroupIdAndMemberId(1L, 2L).get();
+        em.persist(approvedMembership);
+        approvedMembership.modifyStatus(MembershipStatus.LEAVE);
+        em.flush();
+        em.clear();
+
+        MultipartFile[] files = {
+                new MockMultipartFile("file1", "test1.jpg", "image/jpeg", "file1-content".getBytes()),
+                new MockMultipartFile("file2", "test2.jpg", "image/jpeg", "file2-content".getBytes())
+        };
+
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PRIVATE, 1L);
+
+        Post savedPost = postService.savePost(1L, savePostDto, files);
+        Member savedMember = memberRepository.save(Member.builder().username("test").nickname("test").build());
+
+        // Then
+        assertThatThrownBy(() -> postService.getPost(1L, 2L))
+                .isInstanceOf(PostException.class)
+                .hasFieldOrPropertyWithValue("domainErrorCode", PostErrorCode.POST_UNAUTHORIZATION)
+                .hasMessage(PostErrorCode.POST_UNAUTHORIZATION.getMessage());
+    }
+
+    @Test
+    @DisplayName("Fail : 삭제된 게시글 불러오기")
+    void getPost_Fail4() {
+        // Given
+        MultipartFile[] files = {
+                new MockMultipartFile("file1", "test1.jpg", "image/jpeg", "file1-content".getBytes()),
+                new MockMultipartFile("file2", "test2.jpg", "image/jpeg", "file2-content".getBytes())
+        };
+
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
+
+        Post savedPost = postService.savePost(1L, savePostDto, files);
+
         // When
-        postService.deletePost(1L,1L);
+        postService.deletePost(1L, 1L);
 
         // Then
         assertThatThrownBy(() -> postService.getPost(1L, 1L))
@@ -330,8 +898,8 @@ public class PostServiceTest {
     public void getPosts_Success1() {
         for (int i = 15; i >= 1; i--) {
             Post post = Post.builder()
-                    .title( i + " 테스트 제목")
-                    .content( i + " 테스트 내용")
+                    .title(i + " 테스트 제목")
+                    .content(i + " 테스트 내용")
                     .postStatus(PostStatus.PUBLIC)
                     .groupId(1L)
                     .memberId(1L)
@@ -356,8 +924,8 @@ public class PostServiceTest {
     public void getPosts_Success2() {
         for (int i = 9; i >= 1; i--) {
             Post post = Post.builder()
-                    .title( i + " 테스트 제목")
-                    .content( i + " 테스트 내용")
+                    .title(i + " 테스트 제목")
+                    .content(i + " 테스트 내용")
                     .postStatus(PostStatus.PUBLIC)
                     .groupId(1L)
                     .memberId(1L)
@@ -382,8 +950,8 @@ public class PostServiceTest {
     public void getPosts_Fail1() {
         for (int i = 15; i >= 1; i--) {
             Post post = Post.builder()
-                    .title( i + " 테스트 제목")
-                    .content( i + " 테스트 내용")
+                    .title(i + " 테스트 제목")
+                    .content(i + " 테스트 내용")
                     .postStatus(PostStatus.PUBLIC)
                     .groupId(1L)
                     .memberId(1L)
@@ -407,7 +975,7 @@ public class PostServiceTest {
         deleteTestUploadsFile();
     }
 
-    private static void deleteTestUploadsFile(){
+    private static void deleteTestUploadsFile() {
         File folder = new File(BASE_DIR);
         if (folder.exists()) {
             deleteFolderRecursively(folder); // 폴더 내부 파일까지 삭제
