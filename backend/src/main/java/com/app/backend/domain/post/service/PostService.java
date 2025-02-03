@@ -4,13 +4,22 @@ import com.app.backend.domain.attachment.exception.FileErrorCode;
 import com.app.backend.domain.attachment.exception.FileException;
 import com.app.backend.domain.attachment.service.FileService;
 import com.app.backend.domain.attachment.util.FileUtil;
+import com.app.backend.domain.group.entity.GroupMembership;
+import com.app.backend.domain.group.entity.GroupMembershipId;
+import com.app.backend.domain.group.entity.GroupRole;
+import com.app.backend.domain.group.entity.MembershipStatus;
+import com.app.backend.domain.group.exception.GroupMembershipErrorCode;
+import com.app.backend.domain.group.exception.GroupMembershipException;
+import com.app.backend.domain.group.repository.GroupMembershipRepository;
 import com.app.backend.domain.member.entity.Member;
+import com.app.backend.domain.member.exception.MemberException;
 import com.app.backend.domain.member.repository.MemberRepository;
 import com.app.backend.domain.post.dto.req.PostReqDto;
 import com.app.backend.domain.post.dto.resp.PostAttachmentRespDto;
 import com.app.backend.domain.post.dto.resp.PostRespDto;
 import com.app.backend.domain.post.entity.Post;
 import com.app.backend.domain.post.entity.PostAttachment;
+import com.app.backend.domain.post.entity.PostStatus;
 import com.app.backend.domain.post.exception.PostErrorCode;
 import com.app.backend.domain.post.exception.PostException;
 import com.app.backend.domain.post.repository.post.PostRepository;
@@ -29,23 +38,24 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class PostService {
 
     private final FileService fileService;
     private final PostRepository postRepository;
     private final MemberRepository memberRepository;
     private final PostAttachmentRepository postAttachmentRepository;
+    private final GroupMembershipRepository groupMembershipRepository;
 
     public PostRespDto.GetPostDto getPost(final Long postId, final Long memberId) {
-        // Todo : 권한 체크 ex) private, notice
+        Post post = getPostEntity(postId);
+        GroupMembership membership = getMemberShipEntity(post.getGroupId(), memberId);
 
-        Member member = memberRepository.findById(memberId).orElseThrow(() -> new PostException(GlobalErrorCode.ENTITY_NOT_FOUND));
-
-        Post post = postRepository.findByIdAndDisabled(postId, false).orElseThrow(() -> new PostException(PostErrorCode.POST_NOT_FOUND));
-
-        if (post.getDisabled()) {
-            throw new PostException(PostErrorCode.POST_NOT_FOUND);
+        if (!post.getPostStatus().equals(PostStatus.PUBLIC) && !membership.getStatus().equals(MembershipStatus.APPROVED)) {
+            throw new PostException(PostErrorCode.POST_UNAUTHORIZATION);
         }
+
+        Member member = getMemberEntity(memberId);
 
         List<PostAttachmentRespDto.GetPostAttachmentDto> attachments = postAttachmentRepository
                 .findByPostId(postId).stream().map(PostAttachmentRespDto.GetPostAttachmentDto::new).toList();
@@ -60,22 +70,33 @@ public class PostService {
 
     @Transactional
     public Post savePost(final Long memberId, final PostReqDto.SavePostDto savePost, final MultipartFile[] files) {
-        // Todo: Group 의 일원인지 확인, 상태가 APPROVED 인지 확인
-        // Todo: 게시글 종류가 NOTICE 라면 LEADER 인지 확인
+        GroupMembership membership = getMemberShipEntity(savePost.getGroupId(), memberId);
+
+        if (!membership.getStatus().equals(MembershipStatus.APPROVED)) {
+            throw new PostException(PostErrorCode.POST_UNAUTHORIZATION);
+        }
+
+        if (savePost.getPostStatus().equals(PostStatus.NOTICE) && !membership.getGroupRole().equals(GroupRole.LEADER)) {
+            throw new PostException(PostErrorCode.POST_UNAUTHORIZATION);
+        }
 
         Post post = postRepository.save(savePost.toEntity(memberId));
 
-        saveFiles(files, post.getId());
+        saveFiles(files, post);
 
         return post;
     }
 
     @Transactional
     public Post updatePost(final Long memberId, final Long postId, final PostReqDto.ModifyPostDto modifyPost, final MultipartFile[] files) {
-        Post post = postRepository.findByIdAndDisabled(postId, false).orElseThrow(() -> new PostException(PostErrorCode.POST_NOT_FOUND));
+        GroupMembership membership = getMemberShipEntity(modifyPost.getGroupId(), memberId);
+        Post post = getPostEntity(postId);
 
-        // Todo : 권한 체크 -> Group Leader 인지 확인
-        if (!post.getMemberId().equals(memberId)) {
+        if (!membership.getStatus().equals(MembershipStatus.APPROVED)) {
+            throw new PostException(PostErrorCode.POST_UNAUTHORIZATION);
+        }
+
+        if (!(post.getMemberId().equals(memberId) || membership.getGroupRole().equals(GroupRole.LEADER))) {
             throw new PostException(PostErrorCode.POST_UNAUTHORIZATION);
         }
 
@@ -85,7 +106,7 @@ public class PostService {
         post.setContent(modifyPost.getContent());
         post.setPostStatus(modifyPost.getPostStatus());
 
-        saveFiles(files, post.getId());
+        saveFiles(files, post);
 
         if (modifyPost.getRemoveIdList() != null && !modifyPost.getRemoveIdList().isEmpty()) {
             postAttachmentRepository.deleteByIdList(modifyPost.getRemoveIdList());
@@ -96,15 +117,33 @@ public class PostService {
 
     @Transactional
     public void deletePost(final Long memberId, final Long postId) {
-        Post post = postRepository.findByIdAndDisabled(postId, false).orElseThrow(() -> new PostException(PostErrorCode.POST_NOT_FOUND));
+        Post post = getPostEntity(postId);
+        GroupMembership membership = getMemberShipEntity(post.getGroupId(), memberId);
 
-        // Todo : 권한 체크 -> Group LEADER 인지 확인
+        if (!membership.getStatus().equals(MembershipStatus.APPROVED)) {
+            throw new PostException(PostErrorCode.POST_UNAUTHORIZATION);
+        }
 
-        if (!post.getMemberId().equals(memberId)) {
+        if (!(post.getMemberId().equals(memberId) || membership.getGroupRole().equals(GroupRole.LEADER))) {
             throw new PostException(PostErrorCode.POST_UNAUTHORIZATION);
         }
 
         post.delete();
+    }
+
+    private Member getMemberEntity(final Long memberId) {
+        return memberRepository.findById(memberId)
+                .orElseThrow(() -> new PostException(GlobalErrorCode.ENTITY_NOT_FOUND));
+    }
+
+    private Post getPostEntity(final Long postId) {
+        return postRepository.findByIdAndDisabled(postId, false)
+                .orElseThrow(() -> new PostException(PostErrorCode.POST_NOT_FOUND));
+    }
+
+    private GroupMembership getMemberShipEntity(final Long groupId, final Long memberId) {
+        return groupMembershipRepository.findById(GroupMembershipId.builder().groupId(groupId).memberId(memberId).build())
+                .orElseThrow(() -> new GroupMembershipException(GroupMembershipErrorCode.GROUP_MEMBERSHIP_NOT_FOUND));
     }
 
     // 파일 크기 체크
@@ -116,7 +155,7 @@ public class PostService {
     }
 
     // 파일 저장 및 롤백
-    private void saveFiles(final MultipartFile[] files, final Long postId) {
+    private void saveFiles(final MultipartFile[] files, final Post post) {
         if (files == null || files.length == 0) return;
 
         List<PostAttachment> attachments = new ArrayList<>();
@@ -134,7 +173,7 @@ public class PostService {
                         filePath,
                         file.getSize(),
                         FileUtil.getFileType(fileName),
-                        postId));
+                        post.getId()));
             }
             postAttachmentRepository.saveAll(attachments);
         } catch (Exception e) {
