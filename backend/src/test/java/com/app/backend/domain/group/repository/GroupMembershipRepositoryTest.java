@@ -1692,4 +1692,62 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
         assertThat(count).isEqualTo(filteredCount);
     }
 
+    @Test
+    @DisplayName("[성공] Group ID로 해당 모임의 모든 멤버십 활성화 상태를 일괄 Disabled = true로 변경")
+    void updateDisabledForAllGroupMembership() {
+        //Given
+        int                   size             = 20;
+        List<GroupMembership> groupMemberships = new ArrayList<>();
+        int                   j                = 0;
+        Group                 group            = null;
+
+        for (int i = 0; i < size; i++) {
+            Member member = Member.builder()
+                                  .username("testUsername%d".formatted(i))
+                                  .password("testPassword%d".formatted(i))
+                                  .nickname("testNickname%d".formatted(i))
+                                  .build();
+            em.persist(member);
+
+            if (j % 5 == 0) {
+                group = Group.builder()
+                             .name("test%d".formatted(j))
+                             .province("test province%d".formatted(j))
+                             .city("test city%d".formatted(j))
+                             .town("test town%d".formatted(j))
+                             .description("test description%d".formatted(j))
+                             .recruitStatus(RecruitStatus.RECRUITING)
+                             .maxRecruitCount(10)
+                             .build();
+                em.persist(group);
+                j += 1;
+            }
+
+            GroupMembership groupMembership = GroupMembership.builder()
+                                                             .group(group)
+                                                             .member(member)
+                                                             .groupRole(GroupRole.PARTICIPANT)
+                                                             .build();
+            em.persist(groupMembership);
+            groupMemberships.add(groupMembership);
+        }
+        afterEach();
+
+        Long groupId = 3L;
+
+        //When
+        int updatedCount = groupMembershipRepository.updateDisabledForAllGroupMembership(groupId, true);
+        afterEach();
+
+        //Then
+        groupMemberships = groupMemberships.stream()
+                                           .filter(groupMembership -> groupMembership.getGroupId().equals(groupId)
+                                                                      && !groupMembership.getDisabled())
+                                           .toList();
+        List<GroupMembership> updatedGroupMemberships = groupMembershipRepository.findAllByGroupId(groupId);
+
+        assertThat(updatedCount).isEqualTo(groupMemberships.size());
+        assertThat(updatedGroupMemberships.stream().anyMatch(g -> !g.getDisabled())).isFalse();
+    }
+
 }
