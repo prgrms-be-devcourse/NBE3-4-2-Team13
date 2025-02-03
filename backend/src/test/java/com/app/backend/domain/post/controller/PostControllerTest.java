@@ -184,7 +184,7 @@ public class PostControllerTest {
 
         MemberDetails mockUser = new MemberDetails(member);
 
-        PostReqDto.SavePostDto savePost = new PostReqDto.SavePostDto("Title", "Content", PostStatus.PUBLIC, 1L, 1L);
+        PostReqDto.SavePostDto savePost = new PostReqDto.SavePostDto("Title", "Content", PostStatus.PUBLIC, 1L);
 
         MockMultipartFile file = new MockMultipartFile(
                 "file", "test.jpg", "image/jpeg", "dummy".getBytes()
