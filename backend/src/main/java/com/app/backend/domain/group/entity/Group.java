@@ -1,5 +1,6 @@
 package com.app.backend.domain.group.entity;
 
+import com.app.backend.domain.category.entity.Category;
 import com.app.backend.domain.chat.room.entity.ChatRoom;
 import com.app.backend.global.entity.BaseEntity;
 import jakarta.persistence.Column;
@@ -11,6 +12,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
@@ -29,8 +31,7 @@ import lombok.Setter;
 @Entity
 @Table(name = "tbl_groups")
 @Getter
-@Builder
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Group extends BaseEntity {
 
@@ -63,13 +64,47 @@ public class Group extends BaseEntity {
     private Integer maxRecruitCount;    //모임 최대 인원
 
     @OneToMany(mappedBy = "group")
-    @Builder.Default
     private List<GroupMembership> members = new ArrayList<>();  //모임 내 회원(다대다 연관관계 중간 테이블)
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "chat_room_id")
     @Setter(AccessLevel.PUBLIC)
     private ChatRoom chatRoom;      // 채팅방
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private Category category;  //카테고리
+
+    @Builder
+    private Group(@NotNull final Long id,
+                  @NotNull final String name,
+                  @NotNull final String province,
+                  @NotNull final String city,
+                  @NotNull final String town,
+                  @NotNull final String description,
+                  @NotNull final RecruitStatus recruitStatus,
+                  @NotNull @Min(1) final Integer maxRecruitCount,
+                  final ChatRoom chatRoom,
+                  @NotNull final Category category) {
+        this.id = id;
+        this.name = name;
+        this.province = province;
+        this.city = city;
+        this.town = town;
+        this.description = description;
+        this.recruitStatus = recruitStatus;
+        this.maxRecruitCount = maxRecruitCount;
+        this.chatRoom = chatRoom;
+        if (category != null)
+            setRelationshipWithCategory(category);
+    }
+
+    //============================== 연관관계 메서드 ==============================//
+
+    private void setRelationshipWithCategory(@NotNull final Category category) {
+        this.category = category;
+        category.getGroups().add(this);
+    }
 
     //============================== 모임(Group) 수정 메서드 ==============================//
 
@@ -138,6 +173,18 @@ public class Group extends BaseEntity {
     public Group modifyMaxRecruitCount(@NotNull @Min(1) final Integer newMaxRecruitCount) {
         if (!maxRecruitCount.equals(newMaxRecruitCount))
             maxRecruitCount = newMaxRecruitCount;
+        return this;
+    }
+
+    /**
+     * 카테고리 수정
+     *
+     * @param newCategory - 새로운 카테고리
+     * @return this
+     */
+    public Group modifyCategory(@NotNull final Category newCategory) {
+        if (!category.getName().equals(newCategory.getName()))
+            category = newCategory;
         return this;
     }
 
