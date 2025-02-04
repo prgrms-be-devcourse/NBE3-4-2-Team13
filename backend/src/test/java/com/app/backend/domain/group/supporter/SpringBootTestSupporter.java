@@ -1,5 +1,6 @@
 package com.app.backend.domain.group.supporter;
 
+import com.app.backend.domain.category.repository.CategoryRepository;
 import com.app.backend.domain.chat.room.repository.ChatRoomRepository;
 import com.app.backend.domain.group.repository.GroupMembershipRepository;
 import com.app.backend.domain.group.repository.GroupRepository;
@@ -28,6 +29,9 @@ public abstract class SpringBootTestSupporter {
 
     @Autowired
     protected ChatRoomRepository chatRoomRepository;
+
+    @Autowired
+    protected CategoryRepository categoryRepository;
 
     @Autowired
     protected GroupService groupService;

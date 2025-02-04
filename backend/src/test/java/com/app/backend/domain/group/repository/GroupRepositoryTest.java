@@ -2,6 +2,7 @@ package com.app.backend.domain.group.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.app.backend.domain.category.entity.Category;
 import com.app.backend.domain.group.entity.Group;
 import com.app.backend.domain.group.entity.RecruitStatus;
 import com.app.backend.domain.group.supporter.SpringBootTestSupporter;
@@ -697,6 +698,452 @@ class GroupRepositoryTest extends SpringBootTestSupporter {
         //Then
         List<Group> findGroups = findGroupPage.getContent();
         groups = groups.stream().filter(group -> group.getName().contains(name)
+                                                 && group.getProvince().equals(province)
+                                                 && group.getCity().equals(city)
+                                                 && group.getTown().equals(town)).toList();
+
+        assertThat(findGroups).hasSizeLessThanOrEqualTo(pageable.getPageSize());
+        for (int i = 0; i < findGroups.size(); i++) {
+            Group group     = groups.get(i);
+            Group findGroup = findGroups.get(i);
+
+            assertThat(findGroup.getName()).isEqualTo(group.getName());
+            assertThat(findGroup.getProvince()).isEqualTo(group.getProvince());
+            assertThat(findGroup.getCity()).isEqualTo(group.getCity());
+            assertThat(findGroup.getTown()).isEqualTo(group.getTown());
+            assertThat(findGroup.getDescription()).isEqualTo(group.getDescription());
+            assertThat(findGroup.getRecruitStatus()).isEqualTo(group.getRecruitStatus());
+            assertThat(findGroup.getMaxRecruitCount()).isEqualTo(group.getMaxRecruitCount());
+        }
+    }
+
+    @Test
+    @DisplayName("[성공] 카테고리명으로 Group 엔티티 목록 조회")
+    void findAllListByCategory_Name() {
+        //Given
+        Category category = Category.builder()
+                                    .name("category")
+                                    .build();
+        em.persist(category);
+        String categoryName = category.getName();
+
+        int         size   = 20;
+        List<Group> groups = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            Group group = Group.builder()
+                               .name("test%d".formatted(i))
+                               .province("test province%d".formatted(i))
+                               .city("test city%d".formatted(i))
+                               .town("test town%d".formatted(i))
+                               .description("test description%d".formatted(i))
+                               .recruitStatus(RecruitStatus.RECRUITING)
+                               .maxRecruitCount(10)
+                               .category(category)
+                               .build();
+            groups.add(group);
+            em.persist(group);
+        }
+        afterEach();
+
+        //When
+        List<Group> findGroups = groupRepository.findAllByCategory_Name(categoryName);
+
+        //Then
+        groups = groups.stream().filter(group -> group.getCategory().getName().equals(categoryName)).toList();
+
+        assertThat(findGroups).hasSize(groups.size());
+        for (int i = 0; i < groups.size(); i++) {
+            Group group     = groups.get(i);
+            Group findGroup = findGroups.get(i);
+
+            assertThat(findGroup.getName()).isEqualTo(group.getName());
+            assertThat(findGroup.getProvince()).isEqualTo(group.getProvince());
+            assertThat(findGroup.getCity()).isEqualTo(group.getCity());
+            assertThat(findGroup.getTown()).isEqualTo(group.getTown());
+            assertThat(findGroup.getDescription()).isEqualTo(group.getDescription());
+            assertThat(findGroup.getRecruitStatus()).isEqualTo(group.getRecruitStatus());
+            assertThat(findGroup.getMaxRecruitCount()).isEqualTo(group.getMaxRecruitCount());
+        }
+    }
+
+    @Test
+    @DisplayName("[성공] 카테고리명으로 Group 엔티티 페이징 목록 조회")
+    void findAllPageByCategory_Name() {
+        //Given
+        Category category = Category.builder()
+                                    .name("category")
+                                    .build();
+        em.persist(category);
+        String categoryName = category.getName();
+
+        int         size   = 20;
+        List<Group> groups = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            Group group = Group.builder()
+                               .name("test%d".formatted(i))
+                               .province("test province%d".formatted(i))
+                               .city("test city%d".formatted(i))
+                               .town("test town%d".formatted(i))
+                               .description("test description%d".formatted(i))
+                               .recruitStatus(RecruitStatus.RECRUITING)
+                               .maxRecruitCount(10)
+                               .category(category)
+                               .build();
+            groups.add(group);
+            em.persist(group);
+        }
+        Pageable pageable = PageRequest.of(0, 10);
+        afterEach();
+
+        //When
+        Page<Group> findGroupPage = groupRepository.findAllByCategory_Name(categoryName, pageable);
+
+        //Then
+        List<Group> findGroups = findGroupPage.getContent();
+        groups = groups.stream().filter(group -> group.getCategory().getName().equals(categoryName)).toList();
+
+        assertThat(findGroups).hasSizeLessThanOrEqualTo(pageable.getPageSize());
+        for (int i = 0; i < findGroups.size(); i++) {
+            Group group     = groups.get(i);
+            Group findGroup = findGroups.get(i);
+
+            assertThat(findGroup.getName()).isEqualTo(group.getName());
+            assertThat(findGroup.getProvince()).isEqualTo(group.getProvince());
+            assertThat(findGroup.getCity()).isEqualTo(group.getCity());
+            assertThat(findGroup.getTown()).isEqualTo(group.getTown());
+            assertThat(findGroup.getDescription()).isEqualTo(group.getDescription());
+            assertThat(findGroup.getRecruitStatus()).isEqualTo(group.getRecruitStatus());
+            assertThat(findGroup.getMaxRecruitCount()).isEqualTo(group.getMaxRecruitCount());
+        }
+    }
+
+    @Test
+    @DisplayName("[성공] 카테고리명과 Disabled로 Group 엔티티 목록 조회")
+    void findAllListByCategory_NameAndDisabled() {
+        //Given
+        Category category = Category.builder()
+                                    .name("category")
+                                    .build();
+        em.persist(category);
+        String categoryName = category.getName();
+
+        int         size   = 20;
+        List<Group> groups = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            Group group = Group.builder()
+                               .name("test%d".formatted(i))
+                               .province("test province%d".formatted(i))
+                               .city("test city%d".formatted(i))
+                               .town("test town%d".formatted(i))
+                               .description("test description%d".formatted(i))
+                               .recruitStatus(RecruitStatus.RECRUITING)
+                               .maxRecruitCount(10)
+                               .category(category)
+                               .build();
+            groups.add(group);
+            em.persist(group);
+        }
+        afterEach();
+
+        //When
+        List<Group> findGroups = groupRepository.findAllByCategory_NameAndDisabled(categoryName, false);
+
+        //Then
+        groups = groups.stream().filter(group -> group.getCategory().getName().equals(categoryName)
+                                                 && !group.getDisabled()).toList();
+
+        assertThat(findGroups).hasSize(groups.size());
+        for (int i = 0; i < groups.size(); i++) {
+            Group group     = groups.get(i);
+            Group findGroup = findGroups.get(i);
+
+            assertThat(findGroup.getName()).isEqualTo(group.getName());
+            assertThat(findGroup.getProvince()).isEqualTo(group.getProvince());
+            assertThat(findGroup.getCity()).isEqualTo(group.getCity());
+            assertThat(findGroup.getTown()).isEqualTo(group.getTown());
+            assertThat(findGroup.getDescription()).isEqualTo(group.getDescription());
+            assertThat(findGroup.getRecruitStatus()).isEqualTo(group.getRecruitStatus());
+            assertThat(findGroup.getMaxRecruitCount()).isEqualTo(group.getMaxRecruitCount());
+        }
+    }
+
+    @Test
+    @DisplayName("[성공] 카테고리명과 Disabled로 Group 엔티티 페이징 목록 조회")
+    void findAllPageByCategory_NameAndDisabled() {
+        //Given
+        Category category = Category.builder()
+                                    .name("category")
+                                    .build();
+        em.persist(category);
+        String categoryName = category.getName();
+
+        int         size   = 20;
+        List<Group> groups = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            Group group = Group.builder()
+                               .name("test%d".formatted(i))
+                               .province("test province%d".formatted(i))
+                               .city("test city%d".formatted(i))
+                               .town("test town%d".formatted(i))
+                               .description("test description%d".formatted(i))
+                               .recruitStatus(RecruitStatus.RECRUITING)
+                               .maxRecruitCount(10)
+                               .category(category)
+                               .build();
+            groups.add(group);
+            em.persist(group);
+        }
+        Pageable pageable = PageRequest.of(0, 10);
+        afterEach();
+
+        //When
+        Page<Group> findGroupPage = groupRepository.findAllByCategory_NameAndDisabled(categoryName,
+                                                                                      false,
+                                                                                      pageable);
+
+        //Then
+        List<Group> findGroups = findGroupPage.getContent();
+        groups = groups.stream().filter(group -> group.getCategory().getName().equals(categoryName)
+                                                 && !group.getDisabled()).toList();
+
+        assertThat(findGroups).hasSizeLessThanOrEqualTo(pageable.getPageSize());
+        for (int i = 0; i < findGroups.size(); i++) {
+            Group group     = groups.get(i);
+            Group findGroup = findGroups.get(i);
+
+            assertThat(findGroup.getName()).isEqualTo(group.getName());
+            assertThat(findGroup.getProvince()).isEqualTo(group.getProvince());
+            assertThat(findGroup.getCity()).isEqualTo(group.getCity());
+            assertThat(findGroup.getTown()).isEqualTo(group.getTown());
+            assertThat(findGroup.getDescription()).isEqualTo(group.getDescription());
+            assertThat(findGroup.getRecruitStatus()).isEqualTo(group.getRecruitStatus());
+            assertThat(findGroup.getMaxRecruitCount()).isEqualTo(group.getMaxRecruitCount());
+        }
+    }
+
+    @Test
+    @DisplayName("[성공] 카테고리명, 모임 이름과 Disabled로 Group 엔티티 목록 조회")
+    void findAllListByCategory_NameAndNameContainingAndDisabled() {
+        //Given
+        Category category = Category.builder()
+                                    .name("category")
+                                    .build();
+        em.persist(category);
+        String categoryName = category.getName();
+
+        int         size   = 20;
+        List<Group> groups = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            Group group = Group.builder()
+                               .name("test%d".formatted(i))
+                               .province("test province%d".formatted(i))
+                               .city("test city%d".formatted(i))
+                               .town("test town%d".formatted(i))
+                               .description("test description%d".formatted(i))
+                               .recruitStatus(RecruitStatus.RECRUITING)
+                               .maxRecruitCount(10)
+                               .category(category)
+                               .build();
+            groups.add(group);
+            em.persist(group);
+        }
+        afterEach();
+
+        String name = "5";
+
+        //When
+        List<Group> findGroups = groupRepository.findAllByCategory_NameAndNameContainingAndDisabled(categoryName,
+                                                                                                    name,
+                                                                                                    false);
+
+        //Then
+        groups = groups.stream().filter(group -> group.getCategory().getName().equals(categoryName)
+                                                 && group.getName().contains(name)
+                                                 && !group.getDisabled()).toList();
+
+        assertThat(findGroups).hasSize(groups.size());
+        for (int i = 0; i < groups.size(); i++) {
+            Group group     = groups.get(i);
+            Group findGroup = findGroups.get(i);
+
+            assertThat(findGroup.getName()).isEqualTo(group.getName());
+            assertThat(findGroup.getProvince()).isEqualTo(group.getProvince());
+            assertThat(findGroup.getCity()).isEqualTo(group.getCity());
+            assertThat(findGroup.getTown()).isEqualTo(group.getTown());
+            assertThat(findGroup.getDescription()).isEqualTo(group.getDescription());
+            assertThat(findGroup.getRecruitStatus()).isEqualTo(group.getRecruitStatus());
+            assertThat(findGroup.getMaxRecruitCount()).isEqualTo(group.getMaxRecruitCount());
+        }
+    }
+
+    @Test
+    @DisplayName("[성공] 카테고리명, 모임 이름과 Disabled로 Group 엔티티 페이징 목록 조회")
+    void findAllPageByCategory_NameAndNameContainingAndDisabled() {
+        //Given
+        Category category = Category.builder()
+                                    .name("category")
+                                    .build();
+        em.persist(category);
+        String categoryName = category.getName();
+
+        int         size   = 20;
+        List<Group> groups = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            Group group = Group.builder()
+                               .name("test%d".formatted(i))
+                               .province("test province%d".formatted(i))
+                               .city("test city%d".formatted(i))
+                               .town("test town%d".formatted(i))
+                               .description("test description%d".formatted(i))
+                               .recruitStatus(RecruitStatus.RECRUITING)
+                               .maxRecruitCount(10)
+                               .category(category)
+                               .build();
+            groups.add(group);
+            em.persist(group);
+        }
+        Pageable pageable = PageRequest.of(0, 10);
+        afterEach();
+
+        String name = "5";
+
+        //When
+        Page<Group> findGroupPage = groupRepository.findAllByCategory_NameAndNameContainingAndDisabled(categoryName,
+                                                                                                       name,
+                                                                                                       false,
+                                                                                                       pageable);
+
+        //Then
+        List<Group> findGroups = findGroupPage.getContent();
+        groups = groups.stream().filter(group -> group.getCategory().getName().equals(categoryName)
+                                                 && group.getName().contains(name)
+                                                 && !group.getDisabled()).toList();
+
+        assertThat(findGroups).hasSizeLessThanOrEqualTo(pageable.getPageSize());
+        for (int i = 0; i < findGroups.size(); i++) {
+            Group group     = groups.get(i);
+            Group findGroup = findGroups.get(i);
+
+            assertThat(findGroup.getName()).isEqualTo(group.getName());
+            assertThat(findGroup.getProvince()).isEqualTo(group.getProvince());
+            assertThat(findGroup.getCity()).isEqualTo(group.getCity());
+            assertThat(findGroup.getTown()).isEqualTo(group.getTown());
+            assertThat(findGroup.getDescription()).isEqualTo(group.getDescription());
+            assertThat(findGroup.getRecruitStatus()).isEqualTo(group.getRecruitStatus());
+            assertThat(findGroup.getMaxRecruitCount()).isEqualTo(group.getMaxRecruitCount());
+        }
+    }
+
+    @Test
+    @DisplayName("[성공] 카테고리명, 모임 이름과 상세 주소, Disabled로 Group 엔티티 목록 조회")
+    void findAllListByCategoryAndNameContainingAndRegion() {
+        //Given
+        Category category = Category.builder()
+                                    .name("category")
+                                    .build();
+        em.persist(category);
+        String categoryName = category.getName();
+
+        int         size   = 20;
+        List<Group> groups = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            Group group = Group.builder()
+                               .name("test%d".formatted(i))
+                               .province("test province%d".formatted(i))
+                               .city("test city%d".formatted(i))
+                               .town("test town%d".formatted(i))
+                               .description("test description%d".formatted(i))
+                               .recruitStatus(RecruitStatus.RECRUITING)
+                               .maxRecruitCount(10)
+                               .category(category)
+                               .build();
+            groups.add(group);
+            em.persist(group);
+        }
+        afterEach();
+
+        String name     = "1";
+        String province = "test province10";
+        String city     = "test city10";
+        String town     = "test town10";
+
+        //When
+        List<Group> findGroups = groupRepository.findAllByCategoryAndNameContainingAndRegion(categoryName,
+                                                                                             name,
+                                                                                             province,
+                                                                                             city,
+                                                                                             town,
+                                                                                             false);
+
+        //Then
+        groups = groups.stream().filter(group -> group.getCategory().getName().equals(categoryName)
+                                                 && group.getName().contains(name)
+                                                 && group.getProvince().equals(province)
+                                                 && group.getCity().equals(city)
+                                                 && group.getTown().equals(town)).toList();
+
+        assertThat(findGroups).hasSize(groups.size());
+        for (int i = 0; i < groups.size(); i++) {
+            Group group     = groups.get(i);
+            Group findGroup = findGroups.get(i);
+
+            assertThat(findGroup.getName()).isEqualTo(group.getName());
+            assertThat(findGroup.getProvince()).isEqualTo(group.getProvince());
+            assertThat(findGroup.getCity()).isEqualTo(group.getCity());
+            assertThat(findGroup.getTown()).isEqualTo(group.getTown());
+            assertThat(findGroup.getDescription()).isEqualTo(group.getDescription());
+            assertThat(findGroup.getRecruitStatus()).isEqualTo(group.getRecruitStatus());
+            assertThat(findGroup.getMaxRecruitCount()).isEqualTo(group.getMaxRecruitCount());
+        }
+    }
+
+    @Test
+    @DisplayName("[성공] 카테고리명, 모임 이름과 상세 주소, Disabled로 Group 엔티티 페이징 목록 조회")
+    void findAllPageByCategoryAndNameContainingAndRegion() {
+        //Given
+        Category category = Category.builder()
+                                    .name("category")
+                                    .build();
+        em.persist(category);
+        String categoryName = category.getName();
+
+        int         size   = 20;
+        List<Group> groups = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            Group group = Group.builder()
+                               .name("test%d".formatted(i))
+                               .province("test province%d".formatted(i))
+                               .city("test city%d".formatted(i))
+                               .town("test town%d".formatted(i))
+                               .description("test description%d".formatted(i))
+                               .recruitStatus(RecruitStatus.RECRUITING)
+                               .maxRecruitCount(10)
+                               .category(category)
+                               .build();
+            groups.add(group);
+            em.persist(group);
+        }
+        Pageable pageable = PageRequest.of(0, 10);
+        afterEach();
+
+        String name     = "1";
+        String province = "test province10";
+        String city     = "test city10";
+        String town     = "test town10";
+
+        //When
+        Page<Group> findGroupPage = groupRepository.findAllByCategoryAndNameContainingAndRegion(categoryName,
+                                                                                                name,
+                                                                                                province,
+                                                                                                city,
+                                                                                                town,
+                                                                                                false,
+                                                                                                pageable);
+
+        //Then
+        List<Group> findGroups = findGroupPage.getContent();
+        groups = groups.stream().filter(group -> group.getCategory().getName().equals(categoryName)
+                                                 && group.getName().contains(name)
                                                  && group.getProvince().equals(province)
                                                  && group.getCity().equals(city)
                                                  && group.getTown().equals(town)).toList();
