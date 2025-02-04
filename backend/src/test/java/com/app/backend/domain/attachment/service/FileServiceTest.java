@@ -53,7 +53,7 @@ public class FileServiceTest {
     @DisplayName("Success : 파일 업로드")
     public void testSave() {
 
-        String filePath = fileService.saveFile(mockFile);
+        String filePath = BASE_DIR + "/" + fileService.saveFile(mockFile);
 
         Assertions.assertThat(filePath).isNotNull();
         Assertions.assertThat(Files.exists(Paths.get(filePath))).isTrue();
