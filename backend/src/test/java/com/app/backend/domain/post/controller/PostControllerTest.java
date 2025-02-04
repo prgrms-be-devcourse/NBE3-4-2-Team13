@@ -17,10 +17,9 @@ import com.app.backend.domain.post.entity.Post;
 import com.app.backend.domain.post.entity.PostStatus;
 import com.app.backend.domain.post.exception.PostErrorCode;
 import com.app.backend.domain.post.exception.PostException;
-import com.app.backend.domain.post.service.PostService;
+import com.app.backend.domain.post.service.post.PostService;
 import com.app.backend.global.util.ReflectionUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.validation.constraints.Null;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -80,7 +79,7 @@ public class PostControllerTest {
 
         MemberDetails mockUser = new MemberDetails(member);
 
-        PostRespDto.GetPostDto responseDto = new PostRespDto.GetPostDto(post, member, null);
+        PostRespDto.GetPostDto responseDto = new PostRespDto.GetPostDto(post, member, null, null);
 
         given(postService.getPost(eq(post.getId()), eq(mockUser.getId()))).willReturn(responseDto);
 
@@ -280,6 +279,51 @@ public class PostControllerTest {
                 .with(user(mockUser)));
         resultActions.andExpect(status().isOk());
         resultActions.andExpect(jsonPath("$.message").value("게시글이 성공적으로 삭제되었습니다"));
+        resultActions.andDo(print());
+    }
+
+    @Test
+    @DisplayName("Success : Member 게시글 목록 조회")
+    void getUserByPosts_Success() throws Exception {
+        // Given
+        Member member = Member.builder()
+                .id(1L)
+                .username("test")
+                .nickname("test_name")
+                .role("ROLE_USER")
+                .build();
+
+        Post post = Post.builder()
+                .id(1L)
+                .title("test_title")
+                .content("test_content")
+                .postStatus(PostStatus.PUBLIC)
+                .memberId(1L)
+                .groupId(1L)
+                .build();
+
+        ReflectionUtil.setPrivateFieldValue(Post.class, post, "createdAt", LocalDateTime.now());
+        ReflectionUtil.setPrivateFieldValue(Post.class, post, "modifiedAt", LocalDateTime.now());
+
+        MemberDetails mockUser = new MemberDetails(member);
+
+        Pageable pageable = PageRequest.of(0, 10, Sort.unsorted());
+        Page<PostRespDto.GetPostListDto> mockPage = new PageImpl<>(List.of(new PostRespDto.GetPostListDto(post)), pageable, 1);
+
+        given(postService.getPostsByUser(any(), any(), any())).willReturn(mockPage);
+
+        // When
+        ResultActions resultActions = mockMvc.perform(get(BASE_URL + "/members")
+                .with(user(mockUser))
+                .param("groupId", "1")
+                .param("keyword", "spring")
+                .param("postStatus", "PUBLIC")
+                .contentType(MediaType.APPLICATION_JSON));
+
+        // Then
+        resultActions.andExpect(status().isOk());
+        resultActions.andExpect(jsonPath("$.data.content[0].postId").value(1L));
+        resultActions.andExpect(jsonPath("$.message").value("게시물 목록을 성공적으로 불러왔습니다"));
         resultActions.andDo(print());
     }
 }
