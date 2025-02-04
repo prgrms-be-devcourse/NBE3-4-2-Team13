@@ -16,6 +16,7 @@ import com.app.backend.domain.post.exception.PostErrorCode;
 import com.app.backend.domain.post.exception.PostException;
 import com.app.backend.domain.post.repository.post.PostRepository;
 import com.app.backend.domain.post.repository.postAttachment.PostAttachmentRepository;
+import com.app.backend.domain.post.service.post.PostService;
 import com.app.backend.global.error.exception.DomainException;
 import com.app.backend.global.error.exception.GlobalErrorCode;
 import jakarta.persistence.EntityManager;
@@ -88,7 +89,7 @@ public class PostServiceTest {
         em.createNativeQuery("ALTER TABLE tbl_post_attachments ALTER COLUMN attachment_id RESTART WITH 1").executeUpdate();
     }
 
-    private void dataSetting(){
+    private void dataSetting() {
         Member member1 = memberRepository.save(Member.builder().username("Test member1").nickname("Test Nickname 1").build());
         Member member2 = memberRepository.save(Member.builder().username("Test member2").nickname("Test Nickname 2").build());
 
@@ -131,7 +132,7 @@ public class PostServiceTest {
         assertEquals("새로운 게시글", savedPost.getTitle());
         assertEquals("새로운 내용", savedPost.getContent());
 
-        List<PostAttachment> attachments = postAttachmentRepository.findByPostId(savedPost.getId());
+        List<PostAttachment> attachments = postAttachmentRepository.findByPostIdAndDisabled(savedPost.getId(), false);
         assertEquals(2, attachments.size());
     }
 
@@ -149,7 +150,7 @@ public class PostServiceTest {
         assertEquals("새로운 게시글", savedPost.getTitle());
         assertEquals("새로운 내용", savedPost.getContent());
 
-        List<PostAttachment> attachments = postAttachmentRepository.findByPostId(savedPost.getId());
+        List<PostAttachment> attachments = postAttachmentRepository.findByPostIdAndDisabled(savedPost.getId(), false);
         assertEquals(0, attachments.size());
     }
 
@@ -174,7 +175,7 @@ public class PostServiceTest {
         assertEquals("새로운 게시글", savedPost.getTitle());
         assertEquals("새로운 내용", savedPost.getContent());
 
-        List<PostAttachment> attachments = postAttachmentRepository.findByPostId(savedPost.getId());
+        List<PostAttachment> attachments = postAttachmentRepository.findByPostIdAndDisabled(savedPost.getId(), false);
         assertEquals(0, attachments.size());
     }
 
@@ -185,7 +186,7 @@ public class PostServiceTest {
         PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
 
         // Then
-        assertThatThrownBy(() ->  postService.savePost(2L, savePostDto, null))
+        assertThatThrownBy(() -> postService.savePost(2L, savePostDto, null))
                 .isInstanceOf(PostException.class)
                 .hasFieldOrPropertyWithValue("domainErrorCode", PostErrorCode.POST_UNAUTHORIZATION)
                 .hasMessage(PostErrorCode.POST_UNAUTHORIZATION.getMessage());
@@ -205,7 +206,7 @@ public class PostServiceTest {
         PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
 
         // Then
-        assertThatThrownBy(() ->  postService.savePost(2L, savePostDto, null))
+        assertThatThrownBy(() -> postService.savePost(2L, savePostDto, null))
                 .isInstanceOf(PostException.class)
                 .hasFieldOrPropertyWithValue("domainErrorCode", PostErrorCode.POST_UNAUTHORIZATION)
                 .hasMessage(PostErrorCode.POST_UNAUTHORIZATION.getMessage());
@@ -225,7 +226,7 @@ public class PostServiceTest {
         PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
 
         // Then
-        assertThatThrownBy(() ->  postService.savePost(2L, savePostDto, null))
+        assertThatThrownBy(() -> postService.savePost(2L, savePostDto, null))
                 .isInstanceOf(PostException.class)
                 .hasFieldOrPropertyWithValue("domainErrorCode", PostErrorCode.POST_UNAUTHORIZATION)
                 .hasMessage(PostErrorCode.POST_UNAUTHORIZATION.getMessage());
@@ -245,7 +246,7 @@ public class PostServiceTest {
         PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.NOTICE, 1L);
 
         // Then
-        assertThatThrownBy(() ->  postService.savePost(2L, savePostDto, null))
+        assertThatThrownBy(() -> postService.savePost(2L, savePostDto, null))
                 .isInstanceOf(PostException.class)
                 .hasFieldOrPropertyWithValue("domainErrorCode", PostErrorCode.POST_UNAUTHORIZATION)
                 .hasMessage(PostErrorCode.POST_UNAUTHORIZATION.getMessage());
@@ -278,7 +279,7 @@ public class PostServiceTest {
         assertEquals("수정된 제목", updatedPost.getTitle());
         assertEquals("수정된 내용", updatedPost.getContent());
 
-        List<PostAttachment> attachments = postAttachmentRepository.findByPostId(updatedPost.getId());
+        List<PostAttachment> attachments = postAttachmentRepository.findByPostIdAndDisabled(updatedPost.getId(), false);
         assertEquals(3, attachments.size());
     }
 
@@ -312,7 +313,7 @@ public class PostServiceTest {
         assertEquals("수정된 제목", updatedPost.getTitle());
         assertEquals("수정된 내용", updatedPost.getContent());
 
-        List<PostAttachment> attachments = postAttachmentRepository.findByPostId(updatedPost.getId());
+        List<PostAttachment> attachments = postAttachmentRepository.findByPostIdAndDisabled(updatedPost.getId(), false);
         assertEquals(2, attachments.size());
     }
 
@@ -353,8 +354,44 @@ public class PostServiceTest {
         assertEquals("수정된 제목", updatedPost.getTitle());
         assertEquals("수정된 내용", updatedPost.getContent());
 
-        List<PostAttachment> attachments = postAttachmentRepository.findByPostId(updatedPost.getId());
+        List<PostAttachment> attachments = postAttachmentRepository.findByPostIdAndDisabled(updatedPost.getId(), false);
         assertEquals(2, attachments.size());
+    }
+
+    @Test
+    @DisplayName("Success : 게시글 수정 - document, image 분류 검증")
+    void updatePost_Success4() {
+        // Given
+        MultipartFile[] files = {
+                new MockMultipartFile("file1", "test1.jpg", "image/jpeg", "file1-content".getBytes()),
+                new MockMultipartFile("file2", "test2.pdf", "application/pdf", "pdf-file-content".getBytes())
+        };
+
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
+
+        postService.savePost(1L, savePostDto, files);
+
+        // When
+        MultipartFile[] newFiles = {
+                new MockMultipartFile("file3", "test3.jpg", "image/jpeg", "file3-content".getBytes())
+        };
+
+        List<Long> removeList = new ArrayList<>();
+        removeList.add(1L);
+
+        PostReqDto.ModifyPostDto modifyPostDto =
+                new PostReqDto.ModifyPostDto(1L, "수정된 제목", "수정된 내용", PostStatus.PRIVATE, 0L, null, removeList);
+
+        Post updatedPost = postService.updatePost(1L, 1L, modifyPostDto, newFiles);
+
+        // Then
+        assertEquals("수정된 제목", updatedPost.getTitle());
+        assertEquals("수정된 내용", updatedPost.getContent());
+
+        PostRespDto.GetPostDto respDto = postService.getPost(1L, 1L);
+
+        assertEquals(1, respDto.getImages().size());
+        assertEquals(1, respDto.getDocuments().size());
     }
 
     @Test
@@ -573,8 +610,29 @@ public class PostServiceTest {
     }
 
     @Test
-    @DisplayName("Success : 게시물 삭제 - GroupRole.LEADER")
+    @DisplayName("Success : 게시물 삭제 - 첨부파일 soft delete 검증")
     public void deletePost_Success2() {
+        // Given
+        MultipartFile[] files = {
+                new MockMultipartFile("file1", "test1.jpg", "image/jpeg", generateRandomBytes(2 * 1024 * 1024)),
+                new MockMultipartFile("file2", "test2.jpg", "image/jpeg", generateRandomBytes(2 * 1024 * 1024))
+        };
+
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
+
+        postService.savePost(1L, savePostDto, files);
+
+        // When
+        postService.deletePost(1L, 1L);
+        List<PostAttachment> list = postAttachmentRepository.findByPostIdAndDisabled(1L, false);
+
+        // Then
+        assertEquals(0, list.size());
+    }
+
+    @Test
+    @DisplayName("Success : 게시물 삭제 - GroupRole.LEADER")
+    public void deletePost_Success3() {
         // Given
         GroupMembership membership = groupMembershipRepository.findByGroupIdAndMemberId(1L, 2L).get();
         em.persist(membership);
@@ -760,7 +818,35 @@ public class PostServiceTest {
         assertEquals(savedPost.getContent(), respDto.getContent());
         assertEquals(savedPost.getPostStatus(), respDto.getPostStatus());
         assertEquals(savedPost.getGroupId(), respDto.getGroupId());
-        assertEquals(2, respDto.getAttachments().size());
+        assertEquals(2, respDto.getImages().size());
+    }
+
+    @Test
+    @DisplayName("Success : 게시글 불러오기 - fileType 분류")
+    void getPost_Success() {
+        // Given
+        MultipartFile[] files = {
+                new MockMultipartFile("file1", "test1.jpg", "image/jpeg", "file1-content".getBytes()),
+                new MockMultipartFile("file2", "test2.jpg", "image/jpeg", "file2-content".getBytes()),
+                new MockMultipartFile("file3", "test3.pdf", "application/pdf", "pdf-file-content".getBytes())
+        };
+
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
+
+        Post savedPost = postService.savePost(1L, savePostDto, files);
+        Member savedMember = memberRepository.save(Member.builder().username("test").nickname("test").build());
+
+        // When
+        PostRespDto.GetPostDto respDto = postService.getPost(1L, 1L);
+
+        // Then
+        assertEquals(savedPost.getId(), respDto.getPostId());
+        assertEquals(savedPost.getTitle(), respDto.getTitle());
+        assertEquals(savedPost.getContent(), respDto.getContent());
+        assertEquals(savedPost.getPostStatus(), respDto.getPostStatus());
+        assertEquals(savedPost.getGroupId(), respDto.getGroupId());
+        assertEquals(2, respDto.getImages().size());
+        assertEquals(1,respDto.getDocuments().size());
     }
 
     @Test
@@ -792,7 +878,7 @@ public class PostServiceTest {
         assertEquals(savedPost.getContent(), respDto.getContent());
         assertEquals(savedPost.getPostStatus(), respDto.getPostStatus());
         assertEquals(savedPost.getGroupId(), respDto.getGroupId());
-        assertEquals(2, respDto.getAttachments().size());
+        assertEquals(2, respDto.getImages().size());
     }
 
     @Test
@@ -943,6 +1029,56 @@ public class PostServiceTest {
         assertEquals(9, result.getTotalElements()); // 전체 데이터 개수 확인
         assertEquals(9, result.getContent().size()); // 첫 페이지 10개
         assertEquals("9 테스트 제목", result.getContent().get(0).getTitle()); // 제목 확인
+    }
+
+    @Test
+    @DisplayName("Success : 게시글 목록 불러오기 [페이징] - 정렬 조건 O")
+    public void getPosts_Success3() {
+        for (int i = 15; i >= 1; i--) {
+            Post post = Post.builder()
+                    .title(i + " 테스트 제목")
+                    .content(i + " 테스트 내용")
+                    .postStatus(PostStatus.PUBLIC)
+                    .groupId(1L)
+                    .memberId(1L)
+                    .build();
+            postRepository.save(post);
+        }
+        em.flush();
+        em.clear();
+
+        Pageable pageable = PageRequest.of(1, 10, Sort.by(Sort.Direction.DESC, "title"));
+
+        Page<Post> result = postRepository.findAllBySearchStatus(1L, "", PostStatus.All, false, pageable);
+
+        // Then
+        assertEquals(15, result.getTotalElements()); // 전체 데이터 개수 확인
+        assertEquals(5, result.getContent().size()); // 2 페이지 5개
+        assertEquals("13 테스트 제목", result.getContent().get(0).getTitle()); // 제목 확인
+    }
+
+    @Test
+    @DisplayName("Success : 게시글 목록 불러오기 [페이징] - 검색어 포함")
+    public void getPosts_Success4() {
+        for (int i = 15; i >= 1; i--) {
+            Post post = Post.builder()
+                    .title(i + " 테스트 제목")
+                    .content(i + " 테스트 내용")
+                    .postStatus(PostStatus.PUBLIC)
+                    .groupId(1L)
+                    .memberId(1L)
+                    .build();
+            postRepository.save(post);
+        }
+        em.flush();
+        em.clear();
+
+        Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "title"));
+
+        Page<Post> result = postRepository.findAllBySearchStatus(1L, "test", PostStatus.All, false, pageable);
+
+        // Then
+        assertEquals(0, result.getContent().size());
     }
 
     @Test
