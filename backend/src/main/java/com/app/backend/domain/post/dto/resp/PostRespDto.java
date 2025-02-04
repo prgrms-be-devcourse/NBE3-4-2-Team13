@@ -28,9 +28,15 @@ public class PostRespDto {
         private final Long groupId;
         private final String createdAt;
         private final String modifiedAt;
-        private final List<PostAttachmentRespDto.GetPostAttachmentDto> attachments;
+        private final List<PostAttachmentRespDto.GetPostImageDto> images;
+        private final List<PostAttachmentRespDto.GetPostDocumentDto> documents;
 
-        public GetPostDto(final Post post, final Member member, final List<PostAttachmentRespDto.GetPostAttachmentDto> attachments) {
+        public GetPostDto(
+                final Post post,
+                final Member member,
+                final List<PostAttachmentRespDto.GetPostImageDto> images,
+                final List<PostAttachmentRespDto.GetPostDocumentDto> documents
+        ) {
             this.postId = post.getId();
             this.title = post.getTitle();
             this.content = post.getContent();
@@ -39,7 +45,8 @@ public class PostRespDto {
             this.groupId = post.getGroupId();
             this.createdAt = AppUtil.localDateTimeToString(post.getCreatedAt());
             this.modifiedAt = AppUtil.localDateTimeToString(post.getModifiedAt());
-            this.attachments = attachments;
+            this.images = images;
+            this.documents = documents;
         }
     }
 
