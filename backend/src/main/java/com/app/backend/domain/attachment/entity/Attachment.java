@@ -28,6 +28,9 @@ public abstract class Attachment extends BaseEntity {
     @Column(name = "file_size", nullable = false)
     private Long fileSize;
 
+    @Column(name = "content_type", nullable = false)
+    private String contentType;
+
     @Column(name = "file_type")
     @Enumerated(EnumType.STRING)
     private FileType fileType;
