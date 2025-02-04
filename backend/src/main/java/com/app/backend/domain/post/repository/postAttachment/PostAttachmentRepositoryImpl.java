@@ -17,9 +17,21 @@ public class PostAttachmentRepositoryImpl implements PostAttachmentRepositoryCus
     public void deleteByIdList(List<Long> idList) {
         QPostAttachment postAttachment = QPostAttachment.postAttachment;
         jpaQueryFactory
-                .delete(postAttachment)
-                .where(postAttachment.id.in(idList))
+                .update(postAttachment)
+                .set(postAttachment.disabled, true)
+                .where(postAttachment.id.in(idList)
+                        .and(postAttachment.disabled.eq(false)))
                 .execute();
     }
 
+    @Override
+    public void deleteByPostId(Long postId) {
+        QPostAttachment postAttachment = QPostAttachment.postAttachment;
+        jpaQueryFactory
+                .update(postAttachment)
+                .set(postAttachment.disabled, true)
+                .where(postAttachment.postId.eq(postId)
+                        .and(postAttachment.disabled.eq(false)))
+                .execute();
+    }
 }
