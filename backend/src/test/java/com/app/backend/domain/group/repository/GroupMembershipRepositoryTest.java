@@ -1306,6 +1306,84 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
     }
 
     @Test
+    @DisplayName("[성공] Group ID와 Member ID로 GroupMembership 엔티티 존재 여부 확인")
+    void existsByGroupIdAndMemberId() {
+        //Given
+        Member member = Member.builder()
+                              .username("testUsername")
+                              .password("testPassword")
+                              .nickname("testNickname")
+                              .build();
+        em.persist(member);
+        Long memberId = member.getId();
+
+        Group group = Group.builder()
+                           .name("test")
+                           .province("test province")
+                           .city("test city")
+                           .town("test town")
+                           .description("test description")
+                           .recruitStatus(RecruitStatus.RECRUITING)
+                           .maxRecruitCount(10)
+                           .build();
+        em.persist(group);
+        Long groupId = group.getId();
+
+        GroupMembership groupMembership = GroupMembership.builder()
+                                                         .group(group)
+                                                         .member(member)
+                                                         .groupRole(GroupRole.PARTICIPANT)
+                                                         .build();
+        em.persist(groupMembership);
+        afterEach();
+
+        //When
+        boolean flag = groupMembershipRepository.existsByGroupIdAndMemberId(groupId, memberId);
+
+        //Then
+        assertThat(flag).isTrue();
+    }
+
+    @Test
+    @DisplayName("[성공] Group ID와 Member ID, Disabled로 GroupMembership 엔티티 존재 여부 확인")
+    void existsByGroupIdAndMemberIdAndDisabled() {
+        //Given
+        Member member = Member.builder()
+                              .username("testUsername")
+                              .password("testPassword")
+                              .nickname("testNickname")
+                              .build();
+        em.persist(member);
+        Long memberId = member.getId();
+
+        Group group = Group.builder()
+                           .name("test")
+                           .province("test province")
+                           .city("test city")
+                           .town("test town")
+                           .description("test description")
+                           .recruitStatus(RecruitStatus.RECRUITING)
+                           .maxRecruitCount(10)
+                           .build();
+        em.persist(group);
+        Long groupId = group.getId();
+
+        GroupMembership groupMembership = GroupMembership.builder()
+                                                         .group(group)
+                                                         .member(member)
+                                                         .groupRole(GroupRole.PARTICIPANT)
+                                                         .build();
+        em.persist(groupMembership);
+        afterEach();
+
+        //When
+        boolean flag = groupMembershipRepository.existsByGroupIdAndMemberIdAndDisabled(groupId, memberId, false);
+
+        //Then
+        assertThat(flag).isTrue();
+    }
+
+    @Test
     @DisplayName("[성공] Group ID와 모임 권한(단수)으로 GroupMembership 엔티티 수 조회")
     void countByGroupIdAndGroupRole() {
         //Given
