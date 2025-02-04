@@ -29,6 +29,7 @@ public class GroupRepositoryImpl implements GroupRepositoryCustom {
      * @param province - 시/도
      * @param city     - 시/군/구
      * @param town     - 읍/면/동
+     * @param disabled - 활성화 여부(Soft Delete 상태)
      * @return 모임 목록
      */
     @Override
@@ -48,6 +49,7 @@ public class GroupRepositoryImpl implements GroupRepositoryCustom {
      * @param province - 시/도
      * @param city     - 시/군/구
      * @param town     - 읍/면/동
+     * @param disabled - 활성화 여부(Soft Delete 상태)
      * @param pageable - 페이징 객체
      * @return 모임 페이징 목록
      */
@@ -78,6 +80,7 @@ public class GroupRepositoryImpl implements GroupRepositoryCustom {
      * @param province - 시/도
      * @param city     - 시/군/구
      * @param town     - 읍/면/동
+     * @param disabled - 활성화 여부(Soft Delete 상태)
      * @return 모임 목록
      */
     @Override
@@ -101,6 +104,7 @@ public class GroupRepositoryImpl implements GroupRepositoryCustom {
      * @param province - 시/도
      * @param city     - 시/군/구
      * @param town     - 읍/면/동
+     * @param disabled - 활성화 여부(Soft Delete 상태)
      * @param pageable - 페이징 객체
      * @return 모임 페이징 목록
      */
@@ -124,6 +128,71 @@ public class GroupRepositoryImpl implements GroupRepositoryCustom {
                                               .from(group)
                                               .where(group.name.contains(name)
                                                                .and(getRegionCondition(province, city, town, group)));
+        return PageableExecutionUtils.getPage(content, pageable, count::fetchOne);
+    }
+
+    /**
+     * 카테고리명, 모임 이름, 검색할 지역(시/도, 시/군/구, 읍/면/동)으로 모임 목록 조회
+     *
+     * @param categoryName - 카테고리명
+     * @param name         - 모임 이름
+     * @param province     - 시/도
+     * @param city         - 시/군/구
+     * @param town         - 읍/면/동
+     * @param disabled     - 활성화 여부(Soft Delete 상태)
+     * @return 모임 목록
+     */
+    @Override
+    public List<Group> findAllByCategoryAndNameContainingAndRegion(@NotNull final String categoryName,
+                                                                   final String name,
+                                                                   final String province,
+                                                                   final String city,
+                                                                   final String town,
+                                                                   @NotNull final Boolean disabled) {
+        QGroup group = QGroup.group;
+        return jpaQueryFactory.selectFrom(group)
+                              .where(group.category.name.eq(categoryName),
+                                     group.name.contains(name),
+                                     getRegionCondition(province, city, town, group),
+                                     group.disabled.eq(disabled))
+                              .fetch();
+    }
+
+    /**
+     * 카테고리명, 모임 이름, 검색할 지역(시/도, 시/군/구, 읍/면/동)으로 모임 페이징 목록 조회
+     *
+     * @param categoryName - 카테고리명
+     * @param name         - 모임 이름
+     * @param province     - 시/도
+     * @param city         - 시/군/구
+     * @param town         - 읍/면/동
+     * @param disabled     - 활성화 여부(Soft Delete 상태)
+     * @return 모임 페이징 목록
+     */
+    @Override
+    public Page<Group> findAllByCategoryAndNameContainingAndRegion(@NotNull final String categoryName,
+                                                                   final String name,
+                                                                   final String province,
+                                                                   final String city,
+                                                                   final String town,
+                                                                   @NotNull final Boolean disabled,
+                                                                   @NotNull final Pageable pageable) {
+        QGroup group = QGroup.group;
+        List<Group> content = jpaQueryFactory.selectFrom(group)
+                                             .where(group.category.name.eq(categoryName),
+                                                    group.name.contains(name),
+                                                    getRegionCondition(province, city, town, group),
+                                                    group.disabled.eq(disabled))
+                                             .orderBy(getSortCondition(pageable, group))
+                                             .offset(pageable.getOffset())
+                                             .limit(pageable.getPageSize())
+                                             .fetch();
+        JPAQuery<Long> count = jpaQueryFactory.select(group.count())
+                                              .from(group)
+                                              .where(group.category.name.eq(categoryName),
+                                                     group.name.contains(name),
+                                                     getRegionCondition(province, city, town, group),
+                                                     group.disabled.eq(disabled));
         return PageableExecutionUtils.getPage(content, pageable, count::fetchOne);
     }
 

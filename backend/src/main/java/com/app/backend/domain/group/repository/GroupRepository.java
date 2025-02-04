@@ -19,4 +19,19 @@ public interface GroupRepository extends JpaRepository<Group, Long>, GroupReposi
 
     Page<Group> findAllByNameContainingAndDisabled(String name, Boolean disabled, Pageable pageable);
 
+    List<Group> findAllByCategory_Name(String categoryName);
+
+    Page<Group> findAllByCategory_Name(String categoryName, Pageable pageable);
+
+    List<Group> findAllByCategory_NameAndDisabled(String categoryName, Boolean disabled);
+
+    Page<Group> findAllByCategory_NameAndDisabled(String categoryName, Boolean disabled, Pageable pageable);
+
+    List<Group> findAllByCategory_NameAndNameContainingAndDisabled(String categoryName, String name, Boolean disabled);
+
+    Page<Group> findAllByCategory_NameAndNameContainingAndDisabled(String categoryName,
+                                                                   String name,
+                                                                   Boolean disabled,
+                                                                   Pageable pageable);
+
 }
