@@ -41,6 +41,10 @@ public interface GroupMembershipRepository extends JpaRepository<GroupMembership
                                                                    GroupRole groupRole,
                                                                    Boolean disabled);
 
+    boolean existsByGroupIdAndMemberId(Long groupId, Long memberId);
+
+    boolean existsByGroupIdAndMemberIdAndDisabled(Long groupId, Long memberId, Boolean disabled);
+
     int countByGroupIdAndGroupRole(Long groupId, GroupRole groupRole);
 
     int countByGroupIdAndGroupRoleAndDisabled(Long groupId, GroupRole groupRole, Boolean disabled);
