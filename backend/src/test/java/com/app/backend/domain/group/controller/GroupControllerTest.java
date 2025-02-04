@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.app.backend.domain.category.entity.Category;
 import com.app.backend.domain.group.constant.GroupMessageConstant;
 import com.app.backend.domain.group.dto.request.GroupRequest;
 import com.app.backend.domain.group.dto.response.GroupResponse;
@@ -41,6 +42,10 @@ class GroupControllerTest extends WebMvcTestSupporter {
 
     @BeforeEach
     void beforeEach() {
+        Category category = Category.builder()
+                                    .name("category")
+                                    .build();
+
         Group group = Group.builder()
                            .name("test")
                            .province("test province")
@@ -49,6 +54,7 @@ class GroupControllerTest extends WebMvcTestSupporter {
                            .description("test description")
                            .recruitStatus(RecruitStatus.RECRUITING)
                            .maxRecruitCount(10)
+                           .category(category)
                            .build();
         ReflectionUtil.setPrivateFieldValue(Group.class, group, "createdAt", LocalDateTime.now());
 
@@ -74,6 +80,7 @@ class GroupControllerTest extends WebMvcTestSupporter {
                                                             .town("test town")
                                                             .description("test description")
                                                             .maxRecruitCount(10)
+                                                            .categoryName("category")
                                                             .build();
         String requestBody = objectMapper.writeValueAsString(requestDto);
 
@@ -89,7 +96,7 @@ class GroupControllerTest extends WebMvcTestSupporter {
                                                          GroupMessageConstant.CREATE_GROUP_SUCCESS);
         String responseBody = objectMapper.writeValueAsString(apiResponse);
 
-        resultActions.andExpect(status().isOk())
+        resultActions.andExpect(status().isCreated())
                      .andExpect(content().json(responseBody))
                      .andDo(print());
     }
@@ -106,6 +113,7 @@ class GroupControllerTest extends WebMvcTestSupporter {
                                                             .town("")
                                                             .description(null)
                                                             .maxRecruitCount(-1234567890)
+                                                            .categoryName(null)
                                                             .build();
         String requestBody = objectMapper.writeValueAsString(requestDto);
 
@@ -213,6 +221,7 @@ class GroupControllerTest extends WebMvcTestSupporter {
                                                             .description("new test description")
                                                             .recruitStatus("CLOSED")
                                                             .maxRecruitCount(20)
+                                                            .categoryName("category")
                                                             .build();
         String requestBody = objectMapper.writeValueAsString(requestDto);
 
@@ -248,6 +257,7 @@ class GroupControllerTest extends WebMvcTestSupporter {
                                                             .description("new test description")
                                                             .recruitStatus("CLOSED")
                                                             .maxRecruitCount(20)
+                                                            .categoryName("category")
                                                             .build();
         String requestBody = objectMapper.writeValueAsString(requestDto);
 
