@@ -3,6 +3,7 @@ package com.app.backend.domain.group.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.app.backend.domain.category.entity.Category;
 import com.app.backend.domain.chat.room.entity.ChatRoom;
 import com.app.backend.domain.group.dto.request.GroupRequest;
 import com.app.backend.domain.group.dto.response.GroupResponse;
@@ -49,6 +50,12 @@ class GroupServiceTest extends SpringBootTestSupporter {
         em.persist(member);
         Long memberId = member.getId();
 
+        Category category = Category.builder()
+                                    .name("category")
+                                    .build();
+        em.persist(category);
+        String categoryName = category.getName();
+
         GroupRequest.Create request = GroupRequest.Create.builder()
                                                          .name("test")
                                                          .province("test province")
@@ -56,6 +63,7 @@ class GroupServiceTest extends SpringBootTestSupporter {
                                                          .town("test town")
                                                          .description("test description")
                                                          .maxRecruitCount(10)
+                                                         .categoryName(categoryName)
                                                          .build();
         request.setMemberId(memberId);
 
@@ -66,6 +74,7 @@ class GroupServiceTest extends SpringBootTestSupporter {
         //Then
         Group           savedGroup      = em.find(Group.class, id);
         ChatRoom        chatRoom        = chatRoomRepository.findAll().stream().findFirst().get();
+        Category        findCategory    = categoryRepository.findAll().stream().findFirst().get();
         GroupMembership groupMembership = groupMembershipRepository.findByGroupIdAndMemberId(id, memberId).get();
 
         assertThat(savedGroup.getName()).isEqualTo(request.getName());
@@ -77,12 +86,18 @@ class GroupServiceTest extends SpringBootTestSupporter {
         assertThat(savedGroup.getMaxRecruitCount()).isEqualTo(request.getMaxRecruitCount());
         assertThat(groupMembership.getMemberId()).isEqualTo(memberId);
         assertThat(savedGroup.getChatRoom()).isEqualTo(chatRoom);
+        assertThat(savedGroup.getCategory()).isEqualTo(findCategory);
     }
 
     @Test
     @DisplayName("[성공] ID로 Group Detail DTO 조회")
     void getGroup() {
         //Given
+        Category category = Category.builder()
+                                    .name("category")
+                                    .build();
+        em.persist(category);
+
         Group group = Group.builder()
                            .name("test")
                            .province("test province")
@@ -91,6 +106,7 @@ class GroupServiceTest extends SpringBootTestSupporter {
                            .description("test description")
                            .recruitStatus(RecruitStatus.RECRUITING)
                            .maxRecruitCount(10)
+                           .category(category)
                            .build();
         em.persist(group);
         Long id = group.getId();
@@ -107,6 +123,7 @@ class GroupServiceTest extends SpringBootTestSupporter {
         assertThat(response.getDescription()).isEqualTo(group.getDescription());
         assertThat(response.getRecruitStatus()).isEqualTo(RecruitStatus.RECRUITING.name());
         assertThat(response.getMaxRecruitCount()).isEqualTo(group.getMaxRecruitCount());
+        assertThat(response.getCategoryName()).isEqualTo(group.getCategory().getName());
     }
 
     @Test
@@ -130,6 +147,11 @@ class GroupServiceTest extends SpringBootTestSupporter {
     @DisplayName("[성공] 모든 Group ListInfo DTO 목록 조회")
     void getGroupList() {
         //Given
+        Category category = Category.builder()
+                                    .name("category")
+                                    .build();
+        em.persist(category);
+
         int         size   = 20;
         List<Group> groups = new ArrayList<>();
         for (int i = 0; i < size; i++) {
@@ -141,6 +163,7 @@ class GroupServiceTest extends SpringBootTestSupporter {
                                .description("test description%d".formatted(i))
                                .recruitStatus(RecruitStatus.RECRUITING)
                                .maxRecruitCount(10)
+                               .category(category)
                                .build();
             groups.add(group);
             em.persist(group);
@@ -162,6 +185,7 @@ class GroupServiceTest extends SpringBootTestSupporter {
             assertThat(responseDto.getTown()).isEqualTo(group.getTown());
             assertThat(responseDto.getRecruitStatus()).isEqualTo(group.getRecruitStatus().name());
             assertThat(responseDto.getMaxRecruitCount()).isEqualTo(group.getMaxRecruitCount());
+            assertThat(responseDto.getCategoryName()).isEqualTo(category.getName());
         }
     }
 
@@ -169,6 +193,11 @@ class GroupServiceTest extends SpringBootTestSupporter {
     @DisplayName("[성공] 모든 Group ListInfo DTO 페이징 목록 조회")
     void getGroupPage() {
         //Given
+        Category category = Category.builder()
+                                    .name("category")
+                                    .build();
+        em.persist(category);
+
         int         size   = 20;
         List<Group> groups = new ArrayList<>();
         for (int i = 0; i < size; i++) {
@@ -180,6 +209,7 @@ class GroupServiceTest extends SpringBootTestSupporter {
                                .description("test description%d".formatted(i))
                                .recruitStatus(RecruitStatus.RECRUITING)
                                .maxRecruitCount(10)
+                               .category(category)
                                .build();
             groups.add(group);
             em.persist(group);
@@ -206,6 +236,7 @@ class GroupServiceTest extends SpringBootTestSupporter {
             assertThat(responseDto.getTown()).isEqualTo(group.getTown());
             assertThat(responseDto.getRecruitStatus()).isEqualTo(group.getRecruitStatus().name());
             assertThat(responseDto.getMaxRecruitCount()).isEqualTo(group.getMaxRecruitCount());
+            assertThat(responseDto.getCategoryName()).isEqualTo(category.getName());
         }
     }
 
@@ -213,6 +244,11 @@ class GroupServiceTest extends SpringBootTestSupporter {
     @DisplayName("[성공] 모임 이름으로 ListInfo DTO 목록 조회")
     void getGroupsByNameContainingList() {
         //Given
+        Category category = Category.builder()
+                                    .name("category")
+                                    .build();
+        em.persist(category);
+
         int         size   = 20;
         List<Group> groups = new ArrayList<>();
         for (int i = 0; i < size; i++) {
@@ -224,6 +260,7 @@ class GroupServiceTest extends SpringBootTestSupporter {
                                .description("test description%d".formatted(i))
                                .recruitStatus(RecruitStatus.RECRUITING)
                                .maxRecruitCount(10)
+                               .category(category)
                                .build();
             groups.add(group);
             em.persist(group);
@@ -249,6 +286,7 @@ class GroupServiceTest extends SpringBootTestSupporter {
             assertThat(responseDto.getTown()).isEqualTo(group.getTown());
             assertThat(responseDto.getRecruitStatus()).isEqualTo(group.getRecruitStatus().name());
             assertThat(responseDto.getMaxRecruitCount()).isEqualTo(group.getMaxRecruitCount());
+            assertThat(responseDto.getCategoryName()).isEqualTo(category.getName());
         }
     }
 
@@ -256,6 +294,11 @@ class GroupServiceTest extends SpringBootTestSupporter {
     @DisplayName("[성공] 모임 이름으로 ListInfo DTO 페이징 목록 조회")
     void getGroupsByNameContainingPage() {
         //Given
+        Category category = Category.builder()
+                                    .name("category")
+                                    .build();
+        em.persist(category);
+
         int         size   = 20;
         List<Group> groups = new ArrayList<>();
         for (int i = 0; i < size; i++) {
@@ -267,6 +310,7 @@ class GroupServiceTest extends SpringBootTestSupporter {
                                .description("test description%d".formatted(i))
                                .recruitStatus(RecruitStatus.RECRUITING)
                                .maxRecruitCount(10)
+                               .category(category)
                                .build();
             groups.add(group);
             em.persist(group);
@@ -294,6 +338,7 @@ class GroupServiceTest extends SpringBootTestSupporter {
             assertThat(responseDto.getTown()).isEqualTo(group.getTown());
             assertThat(responseDto.getRecruitStatus()).isEqualTo(group.getRecruitStatus().name());
             assertThat(responseDto.getMaxRecruitCount()).isEqualTo(group.getMaxRecruitCount());
+            assertThat(responseDto.getCategoryName()).isEqualTo(category.getName());
         }
     }
 
@@ -301,6 +346,11 @@ class GroupServiceTest extends SpringBootTestSupporter {
     @DisplayName("[성공] 주소로 ListInfo DTO 목록 조회")
     void getGroupsByRegionList() {
         //Given
+        Category category = Category.builder()
+                                    .name("category")
+                                    .build();
+        em.persist(category);
+
         int         size   = 20;
         List<Group> groups = new ArrayList<>();
         for (int i = 0; i < size; i++) {
@@ -312,6 +362,7 @@ class GroupServiceTest extends SpringBootTestSupporter {
                                .description("test description%d".formatted(i))
                                .recruitStatus(RecruitStatus.RECRUITING)
                                .maxRecruitCount(10)
+                               .category(category)
                                .build();
             groups.add(group);
             em.persist(group);
@@ -341,6 +392,7 @@ class GroupServiceTest extends SpringBootTestSupporter {
             assertThat(responseDto.getTown()).isEqualTo(group.getTown());
             assertThat(responseDto.getRecruitStatus()).isEqualTo(group.getRecruitStatus().name());
             assertThat(responseDto.getMaxRecruitCount()).isEqualTo(group.getMaxRecruitCount());
+            assertThat(responseDto.getCategoryName()).isEqualTo(category.getName());
         }
     }
 
@@ -348,6 +400,11 @@ class GroupServiceTest extends SpringBootTestSupporter {
     @DisplayName("[성공] 주소로 ListInfo DTO 페이징 목록 조회")
     void getGroupsByRegionPage() {
         //Given
+        Category category = Category.builder()
+                                    .name("category")
+                                    .build();
+        em.persist(category);
+
         int         size   = 20;
         List<Group> groups = new ArrayList<>();
         for (int i = 0; i < size; i++) {
@@ -359,6 +416,7 @@ class GroupServiceTest extends SpringBootTestSupporter {
                                .description("test description%d".formatted(i))
                                .recruitStatus(RecruitStatus.RECRUITING)
                                .maxRecruitCount(10)
+                               .category(category)
                                .build();
             groups.add(group);
             em.persist(group);
@@ -391,6 +449,7 @@ class GroupServiceTest extends SpringBootTestSupporter {
             assertThat(responseDto.getTown()).isEqualTo(group.getTown());
             assertThat(responseDto.getRecruitStatus()).isEqualTo(group.getRecruitStatus().name());
             assertThat(responseDto.getMaxRecruitCount()).isEqualTo(group.getMaxRecruitCount());
+            assertThat(responseDto.getCategoryName()).isEqualTo(category.getName());
         }
     }
 
@@ -398,6 +457,11 @@ class GroupServiceTest extends SpringBootTestSupporter {
     @DisplayName("[성공] 모임 이름과 주소로 ListInfo DTO 목록 조회")
     void getGroupsByNameContainingAndRegionList() {
         //Given
+        Category category = Category.builder()
+                                    .name("category")
+                                    .build();
+        em.persist(category);
+
         int         size   = 20;
         List<Group> groups = new ArrayList<>();
         for (int i = 0; i < size; i++) {
@@ -409,6 +473,7 @@ class GroupServiceTest extends SpringBootTestSupporter {
                                .description("test description%d".formatted(i))
                                .recruitStatus(RecruitStatus.RECRUITING)
                                .maxRecruitCount(10)
+                               .category(category)
                                .build();
             groups.add(group);
             em.persist(group);
@@ -444,6 +509,7 @@ class GroupServiceTest extends SpringBootTestSupporter {
             assertThat(responseDto.getTown()).isEqualTo(group.getTown());
             assertThat(responseDto.getRecruitStatus()).isEqualTo(group.getRecruitStatus().name());
             assertThat(responseDto.getMaxRecruitCount()).isEqualTo(group.getMaxRecruitCount());
+            assertThat(responseDto.getCategoryName()).isEqualTo(category.getName());
         }
     }
 
@@ -451,6 +517,11 @@ class GroupServiceTest extends SpringBootTestSupporter {
     @DisplayName("[성공] 모임 이름과 주소로 ListInfo DTO 페이징 목록 조회")
     void getGroupsByNameContainingAndRegionPage() {
         //Given
+        Category category = Category.builder()
+                                    .name("category")
+                                    .build();
+        em.persist(category);
+
         int         size   = 20;
         List<Group> groups = new ArrayList<>();
         for (int i = 0; i < size; i++) {
@@ -462,6 +533,7 @@ class GroupServiceTest extends SpringBootTestSupporter {
                                .description("test description%d".formatted(i))
                                .recruitStatus(RecruitStatus.RECRUITING)
                                .maxRecruitCount(10)
+                               .category(category)
                                .build();
             groups.add(group);
             em.persist(group);
@@ -501,6 +573,7 @@ class GroupServiceTest extends SpringBootTestSupporter {
             assertThat(responseDto.getTown()).isEqualTo(group.getTown());
             assertThat(responseDto.getRecruitStatus()).isEqualTo(group.getRecruitStatus().name());
             assertThat(responseDto.getMaxRecruitCount()).isEqualTo(group.getMaxRecruitCount());
+            assertThat(responseDto.getCategoryName()).isEqualTo(category.getName());
         }
     }
 
@@ -516,6 +589,16 @@ class GroupServiceTest extends SpringBootTestSupporter {
         em.persist(member);
         Long memberId = member.getId();
 
+        Category category = Category.builder()
+                                    .name("category")
+                                    .build();
+        em.persist(category);
+        Category newCategory = Category.builder()
+                                       .name("nCategory")
+                                       .build();
+        em.persist(newCategory);
+        String newCategoryName = newCategory.getName();
+
         Group group = Group.builder()
                            .name("test")
                            .province("test province")
@@ -524,6 +607,7 @@ class GroupServiceTest extends SpringBootTestSupporter {
                            .description("test description")
                            .recruitStatus(RecruitStatus.RECRUITING)
                            .maxRecruitCount(10)
+                           .category(category)
                            .build();
         em.persist(group);
         Long groupId = group.getId();
@@ -544,6 +628,7 @@ class GroupServiceTest extends SpringBootTestSupporter {
                                                         .description("new test description")
                                                         .recruitStatus(RecruitStatus.CLOSED.name())
                                                         .maxRecruitCount(20)
+                                                        .categoryName(newCategoryName)
                                                         .build();
         update.setGroupId(groupId);
         update.setMemberId(memberId);
@@ -566,6 +651,8 @@ class GroupServiceTest extends SpringBootTestSupporter {
         assertThat(response.getRecruitStatus()).isEqualTo(RecruitStatus.CLOSED.name());
         assertThat(response.getMaxRecruitCount()).isNotEqualTo(group.getMaxRecruitCount());
         assertThat(response.getMaxRecruitCount()).isEqualTo(update.getMaxRecruitCount());
+        assertThat(response.getCategoryName()).isNotEqualTo(category.getName());
+        assertThat(response.getCategoryName()).isEqualTo(newCategoryName);
     }
 
     @Test
