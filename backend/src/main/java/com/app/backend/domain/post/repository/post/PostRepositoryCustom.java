@@ -9,4 +9,5 @@ public interface PostRepositoryCustom {
 
     Page<Post> findAllBySearchStatus(Long groupId, String search, PostStatus postStatus, boolean disabled, Pageable pageable);
 
+    Page<Post> findAllByUserAndSearchStatus(Long groupId, Long memberId, String search, PostStatus postStatus, boolean disabled, Pageable pageable);
 }

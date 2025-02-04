@@ -37,6 +37,7 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
         List<Post> posts = jpaQueryFactory.selectFrom(post)
                 .where(searchKeywordContains(post, search),
                         checkPostStatus(post, postStatus),
+                        post.groupId.eq(groupId),
                         post.disabled.eq(disabled))
                 .orderBy(getSortCondition(pageable, post))
                 .offset(pageable.getOffset())
@@ -46,7 +47,39 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
         long total = Optional.ofNullable(
                 jpaQueryFactory.select(post.count())
                         .from(post)
-                        .where(searchKeywordContains(post, search))
+                        .where(searchKeywordContains(post, search),
+                                checkPostStatus(post, postStatus),
+                                post.groupId.eq(groupId),
+                                post.disabled.eq(disabled))
+                        .fetchOne()
+        ).orElse(0L);
+
+        return new PageImpl<>(posts, pageable, total);
+    }
+
+    @Override
+    public Page<Post> findAllByUserAndSearchStatus(final Long groupId, final Long memberId, final String search, final PostStatus postStatus, final boolean disabled, final Pageable pageable) {
+        QPost post = QPost.post;
+
+        List<Post> posts = jpaQueryFactory.selectFrom(post)
+                .where(searchKeywordContains(post, search),
+                        checkPostStatus(post, postStatus),
+                        post.groupId.eq(groupId),
+                        post.memberId.eq(memberId),
+                        post.disabled.eq(disabled))
+                .orderBy(getSortCondition(pageable, post))
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        long total = Optional.ofNullable(
+                jpaQueryFactory.select(post.count())
+                        .from(post)
+                        .where(searchKeywordContains(post, search),
+                                checkPostStatus(post, postStatus),
+                                post.groupId.eq(groupId),
+                                post.memberId.eq(memberId),
+                                post.disabled.eq(disabled))
                         .fetchOne()
         ).orElse(0L);
 
