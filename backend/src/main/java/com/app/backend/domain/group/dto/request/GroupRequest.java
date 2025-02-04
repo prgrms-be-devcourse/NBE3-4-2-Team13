@@ -37,6 +37,8 @@ public class GroupRequest {
         @NotNull
         @Min(1)
         private Integer maxRecruitCount;
+        @NotNull
+        private String  categoryName;
     }
 
     @Getter
@@ -68,6 +70,8 @@ public class GroupRequest {
         @NotNull
         @Min(1)
         private Integer maxRecruitCount;
+        @NotNull
+        private String  categoryName;
     }
 
 }

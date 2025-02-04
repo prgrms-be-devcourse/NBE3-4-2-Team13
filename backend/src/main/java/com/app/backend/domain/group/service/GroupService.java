@@ -1,5 +1,9 @@
 package com.app.backend.domain.group.service;
 
+import com.app.backend.domain.category.entity.Category;
+import com.app.backend.domain.category.exception.CategoryErrorCode;
+import com.app.backend.domain.category.exception.CategoryException;
+import com.app.backend.domain.category.repository.CategoryRepository;
 import com.app.backend.domain.chat.room.entity.ChatRoom;
 import com.app.backend.domain.chat.room.repository.ChatRoomRepository;
 import com.app.backend.domain.group.dto.request.GroupRequest;
@@ -43,6 +47,7 @@ public class GroupService {
     private final GroupMembershipRepository groupMembershipRepository;
     private final MemberRepository          memberRepository;
     private final ChatRoomRepository        chatRoomRepository;
+    private final CategoryRepository        categoryRepository;
 
     /**
      * 모임(Group) 저장
@@ -56,6 +61,12 @@ public class GroupService {
         Member member = memberRepository.findById(dto.getMemberId())
                                         .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
 
+        //생성할 모임을 추가할 카테고리 조회
+        Category category = categoryRepository.findByNameAndDisabled(dto.getCategoryName(), false)
+                                              .orElseThrow(() -> new CategoryException(
+                                                      CategoryErrorCode.CATEGORY_NOT_FOUND)
+                                              );
+
         //모임 엔티티 생성
         Group group = Group.builder()
                            .name(dto.getName())
@@ -65,6 +76,7 @@ public class GroupService {
                            .description(dto.getDescription())
                            .recruitStatus(RecruitStatus.RECRUITING)
                            .maxRecruitCount(dto.getMaxRecruitCount())
+                           .category(category)
                            .build();
 
         //모임 채팅방 엔티티 생성
@@ -235,11 +247,18 @@ public class GroupService {
         Group group = groupRepository.findByIdAndDisabled(dto.getGroupId(), false)
                                      .orElseThrow(() -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND));
 
+        //수정할 카테고리 조회
+        Category newCategory = categoryRepository.findByNameAndDisabled(dto.getCategoryName(), false)
+                                                 .orElseThrow(() -> new CategoryException(
+                                                         CategoryErrorCode.CATEGORY_NOT_FOUND
+                                                 ));
+
         group.modifyName(dto.getName())
              .modifyRegion(dto.getProvince(), dto.getCity(), dto.getTown())
              .modifyDescription(dto.getDescription())
              .modifyRecruitStatus(RecruitStatus.valueOf(dto.getRecruitStatus()))
-             .modifyMaxRecruitCount(dto.getMaxRecruitCount());
+             .modifyMaxRecruitCount(dto.getMaxRecruitCount())
+             .modifyCategory(newCategory);
 
         return GroupResponse.toDetail(group);
     }
@@ -302,8 +321,10 @@ public class GroupService {
             throw new GroupException(GroupErrorCode.GROUP_NOT_IN_RECRUITMENT_STATUS);
 
         //대상 모임 내 가입 회원 수 조회
-        int count = groupMembershipRepository.countByGroupIdAndGroupRoleIn(groupId, Set.of(GroupRole.LEADER,
-                                                                                           GroupRole.PARTICIPANT));
+        int count = groupMembershipRepository.countByGroupIdAndGroupRoleInAndDisabled(groupId,
+                                                                                      Set.of(GroupRole.LEADER,
+                                                                                             GroupRole.PARTICIPANT),
+                                                                                      false);
 
         //모임 최대 가입 한도와 가입 회원 수 비교, 이미 최대 가입 한도에 도달한 경우 예외
         if (group.getMaxRecruitCount() <= count)
