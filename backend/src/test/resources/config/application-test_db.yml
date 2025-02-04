@@ -27,6 +27,7 @@ spring:
       port: 6379
   file:
     base-dir: ./testUploads
+    img-dir: http://localhost:8080/images
 #logging:
 #  level:
 #    org.hibernate.sql: debug
