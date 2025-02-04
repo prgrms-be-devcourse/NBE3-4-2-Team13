@@ -50,7 +50,7 @@ public class LocalStorageFileServiceImpl implements FileService {
             // 파일 저장
             file.transferTo(filePath.toFile());
 
-            return String.format("%s/%s/%s", BASE_DIR, currentDate, storedFilename);
+            return String.format("%s/%s", currentDate, storedFilename);
         } catch (IOException e) {
             throw new FileException(FileErrorCode.FAILED_FILE_SAVE);
         }
