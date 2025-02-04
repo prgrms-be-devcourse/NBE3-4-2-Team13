@@ -1,5 +1,6 @@
-package com.app.backend.domain.post.service;
+package com.app.backend.domain.post.service.post;
 
+import com.app.backend.domain.attachment.entity.FileType;
 import com.app.backend.domain.attachment.exception.FileErrorCode;
 import com.app.backend.domain.attachment.exception.FileException;
 import com.app.backend.domain.attachment.service.FileService;
@@ -12,7 +13,6 @@ import com.app.backend.domain.group.exception.GroupMembershipErrorCode;
 import com.app.backend.domain.group.exception.GroupMembershipException;
 import com.app.backend.domain.group.repository.GroupMembershipRepository;
 import com.app.backend.domain.member.entity.Member;
-import com.app.backend.domain.member.exception.MemberException;
 import com.app.backend.domain.member.repository.MemberRepository;
 import com.app.backend.domain.post.dto.req.PostReqDto;
 import com.app.backend.domain.post.dto.resp.PostAttachmentRespDto;
@@ -24,6 +24,7 @@ import com.app.backend.domain.post.exception.PostErrorCode;
 import com.app.backend.domain.post.exception.PostException;
 import com.app.backend.domain.post.repository.post.PostRepository;
 import com.app.backend.domain.post.repository.postAttachment.PostAttachmentRepository;
+import com.app.backend.global.config.FileConfig;
 import com.app.backend.global.error.exception.GlobalErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -41,11 +42,13 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class PostService {
 
+    private final FileConfig fileConfig;
     private final FileService fileService;
     private final PostRepository postRepository;
     private final MemberRepository memberRepository;
     private final PostAttachmentRepository postAttachmentRepository;
     private final GroupMembershipRepository groupMembershipRepository;
+
 
     public PostRespDto.GetPostDto getPost(final Long postId, final Long memberId) {
         Post post = getPostEntity(postId);
@@ -57,16 +60,34 @@ public class PostService {
 
         Member member = getMemberEntity(memberId);
 
-        List<PostAttachmentRespDto.GetPostAttachmentDto> attachments = postAttachmentRepository
-                .findByPostId(postId).stream().map(PostAttachmentRespDto.GetPostAttachmentDto::new).toList();
+        // document
+        List<PostAttachmentRespDto.GetPostDocumentDto> documents = postAttachmentRepository
+                .findByPostIdAndFileTypeAndDisabledOrderByCreatedAtDesc(postId, FileType.DOCUMENT, false).stream()
+                .map(PostAttachmentRespDto.GetPostDocumentDto::new)
+                .toList();
 
-        return new PostRespDto.GetPostDto(post, member, attachments);
+        // image
+        List<PostAttachmentRespDto.GetPostImageDto> images = postAttachmentRepository
+                .findByPostIdAndFileTypeAndDisabledOrderByCreatedAtDesc(postId, FileType.IMAGE, false).stream()
+                .map(file -> new PostAttachmentRespDto.GetPostImageDto(file, fileConfig.getIMAGE_DIR()))
+                .toList();
+
+        return new PostRespDto.GetPostDto(post, member, images, documents);
     }
+
 
     public Page<PostRespDto.GetPostListDto> getPostsBySearch(final PostReqDto.SearchPostDto searchPost, final Pageable pageable) {
-        return postRepository.findAllBySearchStatus(searchPost.getGroupId(), searchPost.getSearch(), searchPost.getPostStatus(), false, pageable)
+        return postRepository
+                .findAllBySearchStatus(searchPost.getGroupId(), searchPost.getSearch(), searchPost.getPostStatus(), false, pageable)
                 .map(PostRespDto.GetPostListDto::new);
     }
+
+    public Page<PostRespDto.GetPostListDto> getPostsByUser(final PostReqDto.SearchPostDto searchPost, final Pageable pageable, final Long memberId) {
+        return postRepository
+                .findAllByUserAndSearchStatus(searchPost.getGroupId(), memberId, searchPost.getSearch(), searchPost.getPostStatus(), false, pageable)
+                .map(PostRespDto.GetPostListDto::new);
+    }
+
 
     @Transactional
     public Post savePost(final Long memberId, final PostReqDto.SavePostDto savePost, final MultipartFile[] files) {
@@ -86,6 +107,7 @@ public class PostService {
 
         return post;
     }
+
 
     @Transactional
     public Post updatePost(final Long memberId, final Long postId, final PostReqDto.ModifyPostDto modifyPost, final MultipartFile[] files) {
@@ -115,6 +137,7 @@ public class PostService {
         return post;
     }
 
+
     @Transactional
     public void deletePost(final Long memberId, final Long postId) {
         Post post = getPostEntity(postId);
@@ -128,23 +151,29 @@ public class PostService {
             throw new PostException(PostErrorCode.POST_UNAUTHORIZATION);
         }
 
+        postAttachmentRepository.deleteByPostId(postId);
+
         post.delete();
     }
+
 
     private Member getMemberEntity(final Long memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new PostException(GlobalErrorCode.ENTITY_NOT_FOUND));
     }
 
+
     private Post getPostEntity(final Long postId) {
         return postRepository.findByIdAndDisabled(postId, false)
                 .orElseThrow(() -> new PostException(PostErrorCode.POST_NOT_FOUND));
     }
 
+
     private GroupMembership getMemberShipEntity(final Long groupId, final Long memberId) {
         return groupMembershipRepository.findById(GroupMembershipId.builder().groupId(groupId).memberId(memberId).build())
                 .orElseThrow(() -> new GroupMembershipException(GroupMembershipErrorCode.GROUP_MEMBERSHIP_NOT_FOUND));
     }
+
 
     // 파일 크기 체크
     private void checkFileSize(final MultipartFile[] files, final Long oldSize, final Long maxSize) {
@@ -153,6 +182,7 @@ public class PostService {
             throw new FileException(FileErrorCode.FILE_SIZE_EXCEEDED);
         }
     }
+
 
     // 파일 저장 및 롤백
     private void saveFiles(final MultipartFile[] files, final Post post) {
@@ -165,13 +195,13 @@ public class PostService {
             for (MultipartFile file : files) {
                 String filePath = fileService.saveFile(file);
                 String fileName = FileUtil.getFileName(filePath);
-                filePaths.add(filePath);
-
+                filePaths.add(fileConfig.getBASE_DIR() + "/" + filePath);
                 attachments.add(new PostAttachment(
                         file.getOriginalFilename(),
                         fileName,
                         filePath,
                         file.getSize(),
+                        file.getContentType(),
                         FileUtil.getFileType(fileName),
                         post.getId()));
             }
