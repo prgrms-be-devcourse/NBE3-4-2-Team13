@@ -35,6 +35,8 @@ spring:
       uri: ${MONGO_DB_URI}
   file:
     base-dir: /uploads
+    img-dir: http://localhost:8080/images
+
 logging:
   level:
     org.mongodb.driver.client: warn
