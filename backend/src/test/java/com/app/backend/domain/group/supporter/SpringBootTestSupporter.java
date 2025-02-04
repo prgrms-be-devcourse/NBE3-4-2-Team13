@@ -4,6 +4,7 @@ import com.app.backend.domain.category.repository.CategoryRepository;
 import com.app.backend.domain.chat.room.repository.ChatRoomRepository;
 import com.app.backend.domain.group.repository.GroupMembershipRepository;
 import com.app.backend.domain.group.repository.GroupRepository;
+import com.app.backend.domain.group.service.GroupMembershipService;
 import com.app.backend.domain.group.service.GroupService;
 import com.app.backend.domain.member.repository.MemberRepository;
 import jakarta.persistence.EntityManager;
@@ -35,5 +36,8 @@ public abstract class SpringBootTestSupporter {
 
     @Autowired
     protected GroupService groupService;
+
+    @Autowired
+    protected GroupMembershipService groupMembershipService;
 
 }
