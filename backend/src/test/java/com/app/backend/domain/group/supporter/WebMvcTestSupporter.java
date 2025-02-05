@@ -1,5 +1,6 @@
 package com.app.backend.domain.group.supporter;
 
+import com.app.backend.domain.group.service.GroupMembershipService;
 import com.app.backend.domain.group.service.GroupService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,5 +25,8 @@ public abstract class WebMvcTestSupporter {
 
     @MockitoBean
     protected GroupService groupService;
+
+    @MockitoBean
+    protected GroupMembershipService groupMembershipService;
 
 }

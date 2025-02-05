@@ -3,6 +3,7 @@ package com.app.backend.domain.group.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -10,6 +11,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.handler;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.app.backend.domain.category.entity.Category;
@@ -20,6 +22,7 @@ import com.app.backend.domain.group.dto.response.GroupResponse.ListInfo;
 import com.app.backend.domain.group.entity.Group;
 import com.app.backend.domain.group.entity.RecruitStatus;
 import com.app.backend.domain.group.exception.GroupException;
+import com.app.backend.domain.group.exception.GroupMembershipException;
 import com.app.backend.domain.group.supporter.WebMvcTestSupporter;
 import com.app.backend.global.annotation.CustomWithMockUser;
 import com.app.backend.global.dto.response.ApiResponse;
@@ -61,11 +64,15 @@ class GroupControllerTest extends WebMvcTestSupporter {
         response = GroupResponse.toDetail(group);
         responseList = List.of(GroupResponse.toListInfo(group));
 
-        when(groupService.createGroup(any(GroupRequest.Create.class))).thenReturn(1L);
+        when(groupService.createGroup(anyLong(), any(GroupRequest.Create.class))).thenReturn(1L);
         when(groupService.getGroup(anyLong())).thenReturn(response);
         when(groupService.getGroups()).thenReturn(responseList);
-        when(groupService.modifyGroup(any(GroupRequest.Update.class))).thenReturn(response);
+        when(groupService.modifyGroup(anyLong(), anyLong(), any(GroupRequest.Update.class))).thenReturn(response);
         when(groupService.deleteGroup(anyLong(), anyLong())).thenReturn(true);
+        when(groupMembershipService.approveJoining(anyLong(), anyLong(), anyLong(), eq(true))).thenReturn(true);
+        when(groupMembershipService.approveJoining(anyLong(), anyLong(), anyLong(), eq(false))).thenReturn(false);
+        when(groupMembershipService.modifyGroupRole(anyLong(), anyLong(), anyLong())).thenReturn(true);
+        when(groupMembershipService.leaveGroup(anyLong(), anyLong())).thenReturn(true);
     }
 
     @Test
@@ -96,7 +103,9 @@ class GroupControllerTest extends WebMvcTestSupporter {
                                                          GroupMessageConstant.CREATE_GROUP_SUCCESS);
         String responseBody = objectMapper.writeValueAsString(apiResponse);
 
-        resultActions.andExpect(status().isCreated())
+        resultActions.andExpect(handler().handlerType(GroupController.class))
+                     .andExpect(handler().methodName("createGroup"))
+                     .andExpect(status().isCreated())
                      .andExpect(content().json(responseBody))
                      .andDo(print());
     }
@@ -128,7 +137,9 @@ class GroupControllerTest extends WebMvcTestSupporter {
         ApiResponse<Object> apiResponse  = ApiResponse.of(false, errorCode.getCode(), errorCode.getMessage());
         String              responseBody = objectMapper.writeValueAsString(apiResponse);
 
-        resultActions.andExpect(status().isBadRequest())
+        resultActions.andExpect(handler().handlerType(GroupController.class))
+                     .andExpect(handler().methodName("createGroup"))
+                     .andExpect(status().isBadRequest())
                      .andExpect(result -> {
                          assertThat(result.getResolvedException() instanceof GroupException).isTrue();
                          assertThat(result.getResolvedException().getMessage()).isEqualTo(errorCode.getMessage());
@@ -155,7 +166,9 @@ class GroupControllerTest extends WebMvcTestSupporter {
                                                          response);
         String responseBody = objectMapper.writeValueAsString(apiResponse);
 
-        resultActions.andExpect(status().isOk())
+        resultActions.andExpect(handler().handlerType(GroupController.class))
+                     .andExpect(handler().methodName("getGroupById"))
+                     .andExpect(status().isOk())
                      .andExpect(content().json(responseBody))
                      .andDo(print());
     }
@@ -177,10 +190,12 @@ class GroupControllerTest extends WebMvcTestSupporter {
         ApiResponse<Object> apiResponse  = ApiResponse.of(false, errorCode.getCode(), errorCode.getMessage());
         String              responseBody = objectMapper.writeValueAsString(apiResponse);
 
-        resultActions.andExpect(status().isBadRequest())
+        resultActions.andExpect(handler().handlerType(GroupController.class))
+                     .andExpect(handler().methodName("getGroupById"))
+                     .andExpect(status().isBadRequest())
                      .andExpect(result -> assertThat(
-                             result.getResolvedException() instanceof HandlerMethodValidationException).isTrue()
-                     )
+                             result.getResolvedException() instanceof HandlerMethodValidationException
+                     ).isTrue())
                      .andExpect(content().json(responseBody))
                      .andDo(print());
     }
@@ -203,7 +218,9 @@ class GroupControllerTest extends WebMvcTestSupporter {
                                                                  responseList);
         String responseBody = objectMapper.writeValueAsString(apiResponse);
 
-        resultActions.andExpect(status().isOk())
+        resultActions.andExpect(handler().handlerType(GroupController.class))
+                     .andExpect(handler().methodName("getGroups"))
+                     .andExpect(status().isOk())
                      .andExpect(content().json(responseBody))
                      .andDo(print());
     }
@@ -237,7 +254,9 @@ class GroupControllerTest extends WebMvcTestSupporter {
                                                          GroupMessageConstant.UPDATE_GROUP_SUCCESS);
         String responseBody = objectMapper.writeValueAsString(apiResponse);
 
-        resultActions.andExpect(status().isOk())
+        resultActions.andExpect(handler().handlerType(GroupController.class))
+                     .andExpect(handler().methodName("modifyGroup"))
+                     .andExpect(status().isOk())
                      .andExpect(content().json(responseBody))
                      .andDo(print());
     }
@@ -272,10 +291,12 @@ class GroupControllerTest extends WebMvcTestSupporter {
         ApiResponse<Object> apiResponse  = ApiResponse.of(false, errorCode.getCode(), errorCode.getMessage());
         String              responseBody = objectMapper.writeValueAsString(apiResponse);
 
-        resultActions.andExpect(status().isBadRequest())
+        resultActions.andExpect(handler().handlerType(GroupController.class))
+                     .andExpect(handler().methodName("modifyGroup"))
+                     .andExpect(status().isBadRequest())
                      .andExpect(result -> assertThat(
-                             result.getResolvedException() instanceof HandlerMethodValidationException).isTrue()
-                     )
+                             result.getResolvedException() instanceof HandlerMethodValidationException
+                     ).isTrue())
                      .andExpect(content().json(responseBody))
                      .andDo(print());
     }
@@ -297,7 +318,9 @@ class GroupControllerTest extends WebMvcTestSupporter {
                                                          GroupMessageConstant.DELETE_GROUP_SUCCESS);
         String responseBody = objectMapper.writeValueAsString(apiResponse);
 
-        resultActions.andExpect(status().isOk())
+        resultActions.andExpect(handler().handlerType(GroupController.class))
+                     .andExpect(handler().methodName("deleteGroup"))
+                     .andExpect(status().isOk())
                      .andExpect(content().json(responseBody))
                      .andDo(print());
     }
@@ -319,11 +342,285 @@ class GroupControllerTest extends WebMvcTestSupporter {
         ApiResponse<Object> apiResponse  = ApiResponse.of(false, errorCode.getCode(), errorCode.getMessage());
         String              responseBody = objectMapper.writeValueAsString(apiResponse);
 
-        resultActions.andExpect(status().isBadRequest())
+        resultActions.andExpect(handler().handlerType(GroupController.class))
+                     .andExpect(handler().methodName("deleteGroup"))
+                     .andExpect(status().isBadRequest())
                      .andExpect(result -> assertThat(
-                             result.getResolvedException() instanceof HandlerMethodValidationException).isTrue()
-                     )
+                             result.getResolvedException() instanceof HandlerMethodValidationException
+                     ).isTrue())
                      .andExpect(content().json(responseBody))
+                     .andDo(print());
+    }
+
+    @Test
+    @CustomWithMockUser
+    @DisplayName("[성공] 가입된 모임에서 탈퇴")
+    void leaveGroup() throws Exception {
+        //Given
+
+        //When
+        ResultActions resultActions = mockMvc.perform(delete("/api/v1/groups/{groupId}/leave", 1)
+                                                              .accept(MediaType.APPLICATION_JSON_VALUE)
+                                                              .contentType(MediaType.APPLICATION_JSON_VALUE));
+
+        //Then
+        ApiResponse<Object> apiResponse = ApiResponse.of(true,
+                                                         HttpStatus.OK,
+                                                         GroupMessageConstant.LEAVE_GROUP_SUCCESS);
+        String responseBody = objectMapper.writeValueAsString(apiResponse);
+
+        resultActions.andExpect(handler().handlerType(GroupController.class))
+                     .andExpect(handler().methodName("leaveGroup"))
+                     .andExpect(status().isOk())
+                     .andExpect(content().json(responseBody))
+                     .andDo(print());
+    }
+
+    @Test
+    @CustomWithMockUser
+    @DisplayName("[예외] 올바르지 않은 모임 ID로 탈퇴 시도")
+    void leaveGroup_invalidId() throws Exception {
+        //Given
+        Long invalidId = -1234567890L;
+
+        //When
+        ResultActions resultActions = mockMvc.perform(delete("/api/v1/groups/{groupId}/leave", invalidId)
+                                                              .accept(MediaType.APPLICATION_JSON_VALUE)
+                                                              .contentType(MediaType.APPLICATION_JSON_VALUE));
+
+        //Then
+        GlobalErrorCode     errorCode    = GlobalErrorCode.INVALID_INPUT_VALUE;
+        ApiResponse<Object> apiResponse  = ApiResponse.of(false, errorCode.getCode(), errorCode.getMessage());
+        String              responseBody = objectMapper.writeValueAsString(apiResponse);
+
+        resultActions.andExpect(handler().handlerType(GroupController.class))
+                     .andExpect(handler().methodName("leaveGroup"))
+                     .andExpect(status().isBadRequest())
+                     .andExpect(result -> assertThat(
+                             result.getResolvedException() instanceof HandlerMethodValidationException
+                     ).isTrue())
+                     .andExpect(content().json(responseBody))
+                     .andDo(print());
+    }
+
+    @Test
+    @CustomWithMockUser
+    @DisplayName("[성공] 모임 관리자가 모임 가입 신청을 승인")
+    void approveJoining_approve() throws Exception {
+        //Given
+        GroupRequest.ApproveJoining requestDto = GroupRequest.ApproveJoining.builder()
+                                                                            .memberId(1L)
+                                                                            .isAccept(true)
+                                                                            .build();
+        String requestBody = objectMapper.writeValueAsString(requestDto);
+
+        //When
+        ResultActions resultActions = mockMvc.perform(post("/api/v1/groups/{groupId}/approve", 1)
+                                                              .accept(MediaType.APPLICATION_JSON_VALUE)
+                                                              .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                                              .content(requestBody));
+
+        //Then
+        ApiResponse<Object> apiResponse = ApiResponse.of(true,
+                                                         HttpStatus.OK,
+                                                         GroupMessageConstant.APPROVE_JOINING_SUCCESS);
+        String responseBody = objectMapper.writeValueAsString(apiResponse);
+
+        resultActions.andExpect(handler().handlerType(GroupController.class))
+                     .andExpect(handler().methodName("approveJoining"))
+                     .andExpect(status().isOk())
+                     .andExpect(content().json(responseBody))
+                     .andDo(print());
+    }
+
+    @Test
+    @CustomWithMockUser
+    @DisplayName("[성공] 모임 관리자가 모임 가입 신청을 거절")
+    void approveJoining_reject() throws Exception {
+        //Given
+        GroupRequest.ApproveJoining requestDto = GroupRequest.ApproveJoining.builder()
+                                                                            .memberId(1L)
+                                                                            .isAccept(false)
+                                                                            .build();
+        String requestBody = objectMapper.writeValueAsString(requestDto);
+
+        //When
+        ResultActions resultActions = mockMvc.perform(post("/api/v1/groups/{groupId}/approve", 1)
+                                                              .accept(MediaType.APPLICATION_JSON_VALUE)
+                                                              .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                                              .content(requestBody));
+
+        //Then
+        ApiResponse<Object> apiResponse = ApiResponse.of(true,
+                                                         HttpStatus.OK,
+                                                         GroupMessageConstant.REJECT_JOINING_SUCCESS);
+        String responseBody = objectMapper.writeValueAsString(apiResponse);
+
+        resultActions.andExpect(handler().handlerType(GroupController.class))
+                     .andExpect(handler().methodName("approveJoining"))
+                     .andExpect(status().isOk())
+                     .andExpect(content().json(responseBody))
+                     .andDo(print());
+    }
+
+    @Test
+    @CustomWithMockUser
+    @DisplayName("[예외] 올바르지 않은 모임 ID로 가입 신청 승인/거절 시도")
+    void approveJoining_invalidId() throws Exception {
+        //Given
+        GroupRequest.ApproveJoining requestDto = GroupRequest.ApproveJoining.builder()
+                                                                            .memberId(1L)
+                                                                            .isAccept(true)
+                                                                            .build();
+        String requestBody = objectMapper.writeValueAsString(requestDto);
+        Long   invalidId   = -1234567890L;
+
+        //When
+        ResultActions resultActions = mockMvc.perform(post("/api/v1/groups/{groupId}/approve", invalidId)
+                                                              .accept(MediaType.APPLICATION_JSON_VALUE)
+                                                              .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                                              .content(requestBody));
+
+        //Then
+        GlobalErrorCode errorCode = GlobalErrorCode.INVALID_INPUT_VALUE;
+        ApiResponse<Object> apiResponse = ApiResponse.of(false,
+                                                         errorCode.getCode(),
+                                                         errorCode.getMessage());
+        String responseBody = objectMapper.writeValueAsString(apiResponse);
+
+        resultActions.andExpect(handler().handlerType(GroupController.class))
+                     .andExpect(handler().methodName("approveJoining"))
+                     .andExpect(status().isBadRequest())
+                     .andExpect(result -> assertThat(
+                             result.getResolvedException() instanceof HandlerMethodValidationException
+                     ).isTrue())
+                     .andExpect(content().json(responseBody))
+                     .andDo(print());
+    }
+
+    @Test
+    @CustomWithMockUser
+    @DisplayName("[예외] 모임 가입 신청 승인/거절 DTO에 올바르지 않은 값 존재 시")
+    void approveJoining_invalidValue() throws Exception {
+        //Given
+        GroupRequest.ApproveJoining requestDto = GroupRequest.ApproveJoining.builder()
+                                                                            .memberId(-1234567890L)
+                                                                            .isAccept(true)
+                                                                            .build();
+        String requestBody = objectMapper.writeValueAsString(requestDto);
+
+        //When
+        ResultActions resultActions = mockMvc.perform(post("/api/v1/groups/{groupId}/approve", 1)
+                                                              .accept(MediaType.APPLICATION_JSON_VALUE)
+                                                              .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                                              .content(requestBody));
+
+        //Then
+        GlobalErrorCode errorCode = GlobalErrorCode.INVALID_INPUT_VALUE;
+        ApiResponse<Object> apiResponse = ApiResponse.of(false,
+                                                         errorCode.getCode(),
+                                                         errorCode.getMessage());
+        String responseBody = objectMapper.writeValueAsString(apiResponse);
+
+        resultActions.andExpect(handler().handlerType(GroupController.class))
+                     .andExpect(handler().methodName("approveJoining"))
+                     .andExpect(status().isBadRequest())
+                     .andExpect(result -> {
+                         assertThat(result.getResolvedException() instanceof GroupMembershipException).isTrue();
+                         assertThat(result.getResolvedException().getMessage()).isEqualTo(errorCode.getMessage());
+                     })
+                     .andExpect(content().json(responseBody))
+                     .andDo(print());
+    }
+
+    @Test
+    @CustomWithMockUser
+    @DisplayName("[성공] 모임 관리자가 모임 내 회원의 권한을 변경")
+    void modifyGroupRole() throws Exception {
+        //Given
+        GroupRequest.Permission requestDto = GroupRequest.Permission.builder()
+                                                                    .memberId(1L)
+                                                                    .build();
+        String requestBody = objectMapper.writeValueAsString(requestDto);
+
+        //When
+        ResultActions resultActions = mockMvc.perform(patch("/api/v1/groups/{groupId}/permission", 1)
+                                                              .accept(MediaType.APPLICATION_JSON_VALUE)
+                                                              .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                                              .content(requestBody));
+
+        //Then
+        ApiResponse<Object> apiResponse = ApiResponse.of(true,
+                                                         HttpStatus.OK,
+                                                         GroupMessageConstant.MODIFY_GROUP_ROLE_SUCCESS);
+        String responseBody = objectMapper.writeValueAsString(apiResponse);
+
+        resultActions.andExpect(handler().handlerType(GroupController.class))
+                     .andExpect(handler().methodName("modifyGroupRole"))
+                     .andExpect(status().isOk())
+                     .andExpect(content().json(responseBody))
+                     .andDo(print());
+    }
+
+    @Test
+    @CustomWithMockUser
+    @DisplayName("[예외] 올바르지 않은 모임 ID로 가입 신청 승인/거절 시도")
+    void modifyGroupRole_invalidId() throws Exception {
+        //Given
+        GroupRequest.Permission requestDto = GroupRequest.Permission.builder()
+                                                                    .memberId(1L)
+                                                                    .build();
+        String requestBody = objectMapper.writeValueAsString(requestDto);
+        Long   invalidId   = -1234567890L;
+
+        //When
+        ResultActions resultActions = mockMvc.perform(patch("/api/v1/groups/{groupId}/permission", invalidId)
+                                                              .accept(MediaType.APPLICATION_JSON_VALUE)
+                                                              .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                                              .content(requestBody));
+
+        //Then
+        GlobalErrorCode     errorCode    = GlobalErrorCode.INVALID_INPUT_VALUE;
+        ApiResponse<Object> apiResponse  = ApiResponse.of(false, errorCode.getCode(), errorCode.getMessage());
+        String              responseBody = objectMapper.writeValueAsString(apiResponse);
+
+        resultActions.andExpect(handler().handlerType(GroupController.class))
+                     .andExpect(handler().methodName("modifyGroupRole"))
+                     .andExpect(status().isBadRequest())
+                     .andExpect(result -> assertThat(
+                             result.getResolvedException() instanceof HandlerMethodValidationException
+                     ).isTrue())
+                     .andDo(print());
+    }
+
+    @Test
+    @CustomWithMockUser
+    @DisplayName("[예외] 모임 탈퇴 DTO에 올바르지 않은 값 존재 시")
+    void modifyGroupRole_invalidValue() throws Exception {
+        //Given
+        GroupRequest.Permission requestDto = GroupRequest.Permission.builder()
+                                                                    .memberId(-1234567890L)
+                                                                    .build();
+        String requestBody = objectMapper.writeValueAsString(requestDto);
+
+        //When
+        ResultActions resultActions = mockMvc.perform(patch("/api/v1/groups/{groupId}/permission", 1)
+                                                              .accept(MediaType.APPLICATION_JSON_VALUE)
+                                                              .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                                              .content(requestBody));
+
+        //Then
+        GlobalErrorCode     errorCode    = GlobalErrorCode.INVALID_INPUT_VALUE;
+        ApiResponse<Object> apiResponse  = ApiResponse.of(false, errorCode.getCode(), errorCode.getMessage());
+        String              responseBody = objectMapper.writeValueAsString(apiResponse);
+
+        resultActions.andExpect(handler().handlerType(GroupController.class))
+                     .andExpect(handler().methodName("modifyGroupRole"))
+                     .andExpect(status().isBadRequest())
+                     .andExpect(result -> {
+                         assertThat(result.getResolvedException() instanceof GroupMembershipException).isTrue();
+                         assertThat(result.getResolvedException().getMessage()).isEqualTo(errorCode.getMessage());
+                     })
                      .andDo(print());
     }
 
