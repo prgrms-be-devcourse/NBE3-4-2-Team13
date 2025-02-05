@@ -51,13 +51,14 @@ public class GroupService {
     /**
      * 모임(Group) 저장
      *
-     * @param dto - 모임(Group) 생성 요청 DTO
+     * @param memberId - 회원 ID
+     * @param dto      - 모임(Group) 생성 요청 DTO
      * @return 생성된 Group 엔티티 ID
      */
     @Transactional
-    public Long createGroup(@NotNull final GroupRequest.Create dto) {
+    public Long createGroup(@NotNull @Min(1) final Long memberId, @NotNull final GroupRequest.Create dto) {
         //모임을 생성하는 회원 조회
-        Member member = memberRepository.findById(dto.getMemberId())
+        Member member = memberRepository.findById(memberId)
                                         .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
 
         //생성할 모임을 추가할 카테고리 조회
@@ -223,27 +224,30 @@ public class GroupService {
     /**
      * 모임(Group) 수정
      *
-     * @param dto - 모임(Group) 수정 요청 DTO
+     * @param groupId  - 모임 ID
+     * @param memberId - 회원 ID
+     * @param dto      - 모임(Group) 수정 요청 DTO
      * @return 모임 응답 DTO
      */
     @Transactional
-    public GroupResponse.Detail modifyGroup(@NotNull final GroupRequest.Update dto) {
-        GroupMembership groupMembership =
-                groupMembershipRepository.findByGroupIdAndMemberIdAndDisabled(dto.getGroupId(),
-                                                                              dto.getMemberId(),
-                                                                              false)
-                                         .orElseThrow(
-                                                 () -> new GroupMembershipException(
-                                                         GroupMembershipErrorCode.GROUP_MEMBERSHIP_NOT_FOUND
-                                                 )
-                                         );
+    public GroupResponse.Detail modifyGroup(@NotNull @Min(1) final Long groupId,
+                                            @NotNull @Min(1) final Long memberId,
+                                            @NotNull final GroupRequest.Update dto) {
+        GroupMembership groupMembership = groupMembershipRepository.findByGroupIdAndMemberIdAndDisabled(groupId,
+                                                                                                        memberId,
+                                                                                                        false)
+                                                                   .orElseThrow(
+                                                                           () -> new GroupMembershipException(
+                                                                                   GroupMembershipErrorCode.GROUP_MEMBERSHIP_NOT_FOUND
+                                                                           )
+                                                                   );
 
         //회원의 모임 내 권한 확인
         if (groupMembership.getGroupRole() != GroupRole.LEADER
             || groupMembership.getStatus() != MembershipStatus.APPROVED)
             throw new GroupMembershipException(GroupMembershipErrorCode.GROUP_MEMBERSHIP_NO_PERMISSION);
 
-        Group group = groupRepository.findByIdAndDisabled(dto.getGroupId(), false)
+        Group group = groupRepository.findByIdAndDisabled(groupId, false)
                                      .orElseThrow(() -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND));
 
         //수정할 카테고리 조회

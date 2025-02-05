@@ -18,7 +18,6 @@ public class GroupRequest {
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Create {
-        private Long    memberId;
         @NotNull
         @NotBlank
         private String  name;
@@ -38,6 +37,7 @@ public class GroupRequest {
         @Min(1)
         private Integer maxRecruitCount;
         @NotNull
+        @NotBlank
         private String  categoryName;
     }
 
@@ -47,8 +47,6 @@ public class GroupRequest {
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Update {
-        private Long    groupId;
-        private Long    memberId;
         @NotNull
         @NotBlank
         private String  name;
@@ -71,7 +69,32 @@ public class GroupRequest {
         @Min(1)
         private Integer maxRecruitCount;
         @NotNull
+        @NotBlank
         private String  categoryName;
+    }
+
+    @Getter
+    @Setter
+    @Builder
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
+    @AllArgsConstructor(access = AccessLevel.PRIVATE)
+    public static class ApproveJoining {
+        @NotNull
+        @Min(1)
+        private Long    memberId;
+        @NotNull
+        private Boolean isAccept;
+    }
+
+    @Getter
+    @Setter
+    @Builder
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
+    @AllArgsConstructor(access = AccessLevel.PRIVATE)
+    public static class Permission {
+        @NotNull
+        @Min(1)
+        private Long memberId;
     }
 
 }
