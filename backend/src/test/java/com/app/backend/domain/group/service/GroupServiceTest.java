@@ -64,10 +64,9 @@ class GroupServiceTest extends SpringBootTestSupporter {
                                                          .maxRecruitCount(10)
                                                          .categoryName(categoryName)
                                                          .build();
-        request.setMemberId(memberId);
 
         //When
-        Long id = groupService.createGroup(request);
+        Long id = groupService.createGroup(memberId, request);
         afterEach();
 
         //Then
@@ -629,11 +628,9 @@ class GroupServiceTest extends SpringBootTestSupporter {
                                                         .maxRecruitCount(20)
                                                         .categoryName(newCategoryName)
                                                         .build();
-        update.setGroupId(groupId);
-        update.setMemberId(memberId);
 
         //When
-        GroupResponse.Detail response = groupService.modifyGroup(update);
+        GroupResponse.Detail response = groupService.modifyGroup(groupId, memberId, update);
 
         //Then
         assertThat(response.getName()).isNotEqualTo(group.getName());
@@ -661,8 +658,6 @@ class GroupServiceTest extends SpringBootTestSupporter {
         Long unknownId = 1234567890L;
 
         GroupRequest.Update update = GroupRequest.Update.builder()
-                                                        .groupId(unknownId)
-                                                        .memberId(unknownId)
                                                         .name("new test")
                                                         .province("new test province")
                                                         .city("new test city")
@@ -677,7 +672,7 @@ class GroupServiceTest extends SpringBootTestSupporter {
         //Then
         GroupMembershipErrorCode errorCode = GroupMembershipErrorCode.GROUP_MEMBERSHIP_NOT_FOUND;
 
-        assertThatThrownBy(() -> groupService.modifyGroup(update))
+        assertThatThrownBy(() -> groupService.modifyGroup(unknownId, unknownId, update))
                 .isInstanceOf(GroupMembershipException.class)
                 .hasFieldOrPropertyWithValue("domainErrorCode", errorCode)
                 .hasMessage(errorCode.getMessage());
