@@ -690,6 +690,11 @@ class GroupServiceTest extends SpringBootTestSupporter {
         em.persist(member);
         Long memberId = member.getId();
 
+        Category category = Category.builder()
+                                    .name("category")
+                                    .build();
+        em.persist(category);
+
         Group group = Group.builder()
                            .name("test")
                            .province("test province")
@@ -698,6 +703,7 @@ class GroupServiceTest extends SpringBootTestSupporter {
                            .description("test description")
                            .recruitStatus(RecruitStatus.RECRUITING)
                            .maxRecruitCount(10)
+                           .category(category)
                            .build();
         em.persist(group);
         Long groupId = group.getId();

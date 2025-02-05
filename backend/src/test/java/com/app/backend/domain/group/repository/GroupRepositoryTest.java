@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Page;
@@ -19,6 +20,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
 class GroupRepositoryTest extends SpringBootTestSupporter {
+
+    private Category category;
+
+    @BeforeEach
+    void beforeEach() {
+        category = Category.builder()
+                           .name("category")
+                           .build();
+        em.persist(category);
+    }
 
     @AfterEach
     void afterEach() {
@@ -38,6 +49,7 @@ class GroupRepositoryTest extends SpringBootTestSupporter {
                            .description("test description")
                            .recruitStatus(RecruitStatus.RECRUITING)
                            .maxRecruitCount(10)
+                           .category(category)
                            .build();
 
         //When
@@ -69,6 +81,7 @@ class GroupRepositoryTest extends SpringBootTestSupporter {
                            .description("test description")
                            .recruitStatus(RecruitStatus.RECRUITING)
                            .maxRecruitCount(10)
+                           .category(category)
                            .build();
         em.persist(group);
         Long id = group.getId();
@@ -114,6 +127,7 @@ class GroupRepositoryTest extends SpringBootTestSupporter {
                            .description("test description")
                            .recruitStatus(RecruitStatus.RECRUITING)
                            .maxRecruitCount(10)
+                           .category(category)
                            .build();
         em.persist(group);
         Long id = group.getId();
@@ -146,6 +160,7 @@ class GroupRepositoryTest extends SpringBootTestSupporter {
                            .description("test description")
                            .recruitStatus(RecruitStatus.RECRUITING)
                            .maxRecruitCount(10)
+                           .category(category)
                            .build();
         em.persist(group);
         Long id = group.getId();
@@ -186,6 +201,7 @@ class GroupRepositoryTest extends SpringBootTestSupporter {
                                .description("test description%d".formatted(i))
                                .recruitStatus(RecruitStatus.RECRUITING)
                                .maxRecruitCount(10)
+                               .category(category)
                                .build();
             groups.add(group);
             em.persist(group);
@@ -225,6 +241,7 @@ class GroupRepositoryTest extends SpringBootTestSupporter {
                                .description("test description%d".formatted(i))
                                .recruitStatus(RecruitStatus.RECRUITING)
                                .maxRecruitCount(10)
+                               .category(category)
                                .build();
             em.persist(group);
         }
@@ -252,6 +269,7 @@ class GroupRepositoryTest extends SpringBootTestSupporter {
                                .description("test description%d".formatted(i))
                                .recruitStatus(RecruitStatus.RECRUITING)
                                .maxRecruitCount(10)
+                               .category(category)
                                .build();
             groups.add(group);
             em.persist(group);
@@ -295,6 +313,7 @@ class GroupRepositoryTest extends SpringBootTestSupporter {
                                .description("test description%d".formatted(i))
                                .recruitStatus(RecruitStatus.RECRUITING)
                                .maxRecruitCount(10)
+                               .category(category)
                                .build();
             em.persist(group);
         }
@@ -323,6 +342,7 @@ class GroupRepositoryTest extends SpringBootTestSupporter {
                                .description("test description%d".formatted(i))
                                .recruitStatus(RecruitStatus.RECRUITING)
                                .maxRecruitCount(10)
+                               .category(category)
                                .build();
             groups.add(group);
             em.persist(group);
@@ -366,6 +386,7 @@ class GroupRepositoryTest extends SpringBootTestSupporter {
                                .description("test description%d".formatted(i))
                                .recruitStatus(RecruitStatus.RECRUITING)
                                .maxRecruitCount(10)
+                               .category(category)
                                .build();
             em.persist(group);
         }
@@ -394,6 +415,7 @@ class GroupRepositoryTest extends SpringBootTestSupporter {
                                .description("test description%d".formatted(i))
                                .recruitStatus(RecruitStatus.RECRUITING)
                                .maxRecruitCount(10)
+                               .category(category)
                                .build();
             em.persist(group);
         }
@@ -423,6 +445,7 @@ class GroupRepositoryTest extends SpringBootTestSupporter {
                                .description("test description%d".formatted(i))
                                .recruitStatus(RecruitStatus.RECRUITING)
                                .maxRecruitCount(10)
+                               .category(category)
                                .build();
             groups.add(group);
             em.persist(group);
@@ -468,6 +491,7 @@ class GroupRepositoryTest extends SpringBootTestSupporter {
                                .description("test description%d".formatted(i))
                                .recruitStatus(RecruitStatus.RECRUITING)
                                .maxRecruitCount(10)
+                               .category(category)
                                .build();
             em.persist(group);
         }
@@ -499,6 +523,7 @@ class GroupRepositoryTest extends SpringBootTestSupporter {
                                .description("test description%d".formatted(i))
                                .recruitStatus(RecruitStatus.RECRUITING)
                                .maxRecruitCount(10)
+                               .category(category)
                                .build();
             em.persist(group);
         }
@@ -531,6 +556,7 @@ class GroupRepositoryTest extends SpringBootTestSupporter {
                                .description("test description%d".formatted(i))
                                .recruitStatus(RecruitStatus.RECRUITING)
                                .maxRecruitCount(10)
+                               .category(category)
                                .build();
             groups.add(group);
             em.persist(group);
@@ -579,6 +605,7 @@ class GroupRepositoryTest extends SpringBootTestSupporter {
                                .description("test description%d".formatted(i))
                                .recruitStatus(RecruitStatus.RECRUITING)
                                .maxRecruitCount(10)
+                               .category(category)
                                .build();
             groups.add(group);
             em.persist(group);
@@ -629,6 +656,7 @@ class GroupRepositoryTest extends SpringBootTestSupporter {
                                .description("test description%d".formatted(i))
                                .recruitStatus(RecruitStatus.RECRUITING)
                                .maxRecruitCount(10)
+                               .category(category)
                                .build();
             groups.add(group);
             em.persist(group);
@@ -679,6 +707,7 @@ class GroupRepositoryTest extends SpringBootTestSupporter {
                                .description("test description%d".formatted(i))
                                .recruitStatus(RecruitStatus.RECRUITING)
                                .maxRecruitCount(10)
+                               .category(category)
                                .build();
             groups.add(group);
             em.persist(group);
@@ -721,10 +750,6 @@ class GroupRepositoryTest extends SpringBootTestSupporter {
     @DisplayName("[성공] 카테고리명으로 Group 엔티티 목록 조회")
     void findAllListByCategory_Name() {
         //Given
-        Category category = Category.builder()
-                                    .name("category")
-                                    .build();
-        em.persist(category);
         String categoryName = category.getName();
 
         int         size   = 20;
@@ -770,10 +795,6 @@ class GroupRepositoryTest extends SpringBootTestSupporter {
     @DisplayName("[성공] 카테고리명으로 Group 엔티티 페이징 목록 조회")
     void findAllPageByCategory_Name() {
         //Given
-        Category category = Category.builder()
-                                    .name("category")
-                                    .build();
-        em.persist(category);
         String categoryName = category.getName();
 
         int         size   = 20;
@@ -821,10 +842,6 @@ class GroupRepositoryTest extends SpringBootTestSupporter {
     @DisplayName("[성공] 카테고리명과 Disabled로 Group 엔티티 목록 조회")
     void findAllListByCategory_NameAndDisabled() {
         //Given
-        Category category = Category.builder()
-                                    .name("category")
-                                    .build();
-        em.persist(category);
         String categoryName = category.getName();
 
         int         size   = 20;
@@ -871,10 +888,6 @@ class GroupRepositoryTest extends SpringBootTestSupporter {
     @DisplayName("[성공] 카테고리명과 Disabled로 Group 엔티티 페이징 목록 조회")
     void findAllPageByCategory_NameAndDisabled() {
         //Given
-        Category category = Category.builder()
-                                    .name("category")
-                                    .build();
-        em.persist(category);
         String categoryName = category.getName();
 
         int         size   = 20;
@@ -925,10 +938,6 @@ class GroupRepositoryTest extends SpringBootTestSupporter {
     @DisplayName("[성공] 카테고리명, 모임 이름과 Disabled로 Group 엔티티 목록 조회")
     void findAllListByCategory_NameAndNameContainingAndDisabled() {
         //Given
-        Category category = Category.builder()
-                                    .name("category")
-                                    .build();
-        em.persist(category);
         String categoryName = category.getName();
 
         int         size   = 20;
@@ -980,10 +989,6 @@ class GroupRepositoryTest extends SpringBootTestSupporter {
     @DisplayName("[성공] 카테고리명, 모임 이름과 Disabled로 Group 엔티티 페이징 목록 조회")
     void findAllPageByCategory_NameAndNameContainingAndDisabled() {
         //Given
-        Category category = Category.builder()
-                                    .name("category")
-                                    .build();
-        em.persist(category);
         String categoryName = category.getName();
 
         int         size   = 20;
@@ -1038,10 +1043,6 @@ class GroupRepositoryTest extends SpringBootTestSupporter {
     @DisplayName("[성공] 카테고리명, 모임 이름과 상세 주소, Disabled로 Group 엔티티 목록 조회")
     void findAllListByCategoryAndNameContainingAndRegion() {
         //Given
-        Category category = Category.builder()
-                                    .name("category")
-                                    .build();
-        em.persist(category);
         String categoryName = category.getName();
 
         int         size   = 20;
@@ -1101,10 +1102,6 @@ class GroupRepositoryTest extends SpringBootTestSupporter {
     @DisplayName("[성공] 카테고리명, 모임 이름과 상세 주소, Disabled로 Group 엔티티 페이징 목록 조회")
     void findAllPageByCategoryAndNameContainingAndRegion() {
         //Given
-        Category category = Category.builder()
-                                    .name("category")
-                                    .build();
-        em.persist(category);
         String categoryName = category.getName();
 
         int         size   = 20;
@@ -1175,6 +1172,7 @@ class GroupRepositoryTest extends SpringBootTestSupporter {
                            .description("test description")
                            .recruitStatus(RecruitStatus.RECRUITING)
                            .maxRecruitCount(10)
+                           .category(category)
                            .build();
         em.persist(group);
         Long id = group.getId();
@@ -1222,6 +1220,7 @@ class GroupRepositoryTest extends SpringBootTestSupporter {
                            .description("test description")
                            .recruitStatus(RecruitStatus.RECRUITING)
                            .maxRecruitCount(10)
+                           .category(category)
                            .build();
         em.persist(group);
         Long id = group.getId();
@@ -1248,6 +1247,7 @@ class GroupRepositoryTest extends SpringBootTestSupporter {
                            .description("test description")
                            .recruitStatus(RecruitStatus.RECRUITING)
                            .maxRecruitCount(10)
+                           .category(category)
                            .build();
         em.persist(group);
         Long id = group.getId();

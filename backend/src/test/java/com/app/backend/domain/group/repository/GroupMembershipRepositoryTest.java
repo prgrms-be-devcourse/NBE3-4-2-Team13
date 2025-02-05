@@ -2,6 +2,7 @@ package com.app.backend.domain.group.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.app.backend.domain.category.entity.Category;
 import com.app.backend.domain.group.entity.Group;
 import com.app.backend.domain.group.entity.GroupMembership;
 import com.app.backend.domain.group.entity.GroupMembershipId;
@@ -15,12 +16,23 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
 class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
+
+    private Category category;
+
+    @BeforeEach
+    void beforeEach() {
+        category = Category.builder()
+                           .name("category")
+                           .build();
+        em.persist(category);
+    }
 
     @AfterEach
     void afterEach() {
@@ -48,6 +60,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                            .description("test description")
                            .recruitStatus(RecruitStatus.RECRUITING)
                            .maxRecruitCount(10)
+                           .category(category)
                            .build();
         em.persist(group);
         Long groupId = group.getId();
@@ -97,6 +110,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                            .description("test description")
                            .recruitStatus(RecruitStatus.RECRUITING)
                            .maxRecruitCount(10)
+                           .category(category)
                            .build();
         em.persist(group);
         Long groupId = group.getId();
@@ -161,6 +175,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                            .description("test description")
                            .recruitStatus(RecruitStatus.RECRUITING)
                            .maxRecruitCount(10)
+                           .category(category)
                            .build();
         em.persist(group);
         Long groupId = group.getId();
@@ -219,6 +234,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                            .description("test description")
                            .recruitStatus(RecruitStatus.RECRUITING)
                            .maxRecruitCount(10)
+                           .category(category)
                            .build();
         em.persist(group);
         Long groupId         = group.getId();
@@ -268,6 +284,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                            .description("test description")
                            .recruitStatus(RecruitStatus.RECRUITING)
                            .maxRecruitCount(10)
+                           .category(category)
                            .build();
         em.persist(group);
         Long groupId = group.getId();
@@ -314,6 +331,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                            .description("test description")
                            .recruitStatus(RecruitStatus.RECRUITING)
                            .maxRecruitCount(10)
+                           .category(category)
                            .build();
         em.persist(group);
         Long groupId = group.getId();
@@ -372,6 +390,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                            .description("test description")
                            .recruitStatus(RecruitStatus.RECRUITING)
                            .maxRecruitCount(10)
+                           .category(category)
                            .build();
         em.persist(group);
         Long groupId         = group.getId();
@@ -431,6 +450,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                              .description("test description%d".formatted(j))
                              .recruitStatus(RecruitStatus.RECRUITING)
                              .maxRecruitCount(10)
+                             .category(category)
                              .build();
                 em.persist(group);
                 j += 1;
@@ -494,6 +514,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                              .description("test description%d".formatted(j))
                              .recruitStatus(RecruitStatus.RECRUITING)
                              .maxRecruitCount(10)
+                             .category(category)
                              .build();
                 em.persist(group);
                 j += 1;
@@ -558,6 +579,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                              .description("test description%d".formatted(j))
                              .recruitStatus(RecruitStatus.RECRUITING)
                              .maxRecruitCount(10)
+                             .category(category)
                              .build();
                 em.persist(group);
                 j += 1;
@@ -608,6 +630,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                              .description("test description%d".formatted(j))
                              .recruitStatus(RecruitStatus.RECRUITING)
                              .maxRecruitCount(10)
+                             .category(category)
                              .build();
                 em.persist(group);
                 j += 1;
@@ -671,6 +694,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                              .description("test description%d".formatted(j))
                              .recruitStatus(RecruitStatus.RECRUITING)
                              .maxRecruitCount(10)
+                             .category(category)
                              .build();
                 em.persist(group);
                 j += 1;
@@ -735,6 +759,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                              .description("test description%d".formatted(j))
                              .recruitStatus(RecruitStatus.RECRUITING)
                              .maxRecruitCount(10)
+                             .category(category)
                              .build();
                 em.persist(group);
                 j += 1;
@@ -785,6 +810,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                              .description("test description%d".formatted(j))
                              .recruitStatus(RecruitStatus.RECRUITING)
                              .maxRecruitCount(10)
+                             .category(category)
                              .build();
                 em.persist(group);
                 j += 1;
@@ -848,6 +874,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                              .description("test description%d".formatted(j))
                              .recruitStatus(RecruitStatus.RECRUITING)
                              .maxRecruitCount(10)
+                             .category(category)
                              .build();
                 em.persist(group);
                 j += 1;
@@ -911,6 +938,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                              .description("test description%d".formatted(j))
                              .recruitStatus(RecruitStatus.RECRUITING)
                              .maxRecruitCount(10)
+                             .category(category)
                              .build();
                 em.persist(group);
                 j += 1;
@@ -959,6 +987,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                              .description("test description%d".formatted(j))
                              .recruitStatus(RecruitStatus.RECRUITING)
                              .maxRecruitCount(10)
+                             .category(category)
                              .build();
                 em.persist(group);
                 j += 1;
@@ -1025,6 +1054,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                              .description("test description%d".formatted(j))
                              .recruitStatus(RecruitStatus.RECRUITING)
                              .maxRecruitCount(10)
+                             .category(category)
                              .build();
                 em.persist(group);
                 j += 1;
@@ -1093,6 +1123,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                              .description("test description%d".formatted(j))
                              .recruitStatus(RecruitStatus.RECRUITING)
                              .maxRecruitCount(10)
+                             .category(category)
                              .build();
                 em.persist(group);
                 j += 1;
@@ -1145,6 +1176,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                              .description("test description%d".formatted(j))
                              .recruitStatus(RecruitStatus.RECRUITING)
                              .maxRecruitCount(10)
+                             .category(category)
                              .build();
                 em.persist(group);
                 j += 1;
@@ -1211,6 +1243,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                              .description("test description%d".formatted(j))
                              .recruitStatus(RecruitStatus.RECRUITING)
                              .maxRecruitCount(10)
+                             .category(category)
                              .build();
                 em.persist(group);
                 j += 1;
@@ -1279,6 +1312,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                              .description("test description%d".formatted(j))
                              .recruitStatus(RecruitStatus.RECRUITING)
                              .maxRecruitCount(10)
+                             .category(category)
                              .build();
                 em.persist(group);
                 j += 1;
@@ -1325,6 +1359,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                            .description("test description")
                            .recruitStatus(RecruitStatus.RECRUITING)
                            .maxRecruitCount(10)
+                           .category(category)
                            .build();
         em.persist(group);
         Long groupId = group.getId();
@@ -1364,6 +1399,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                            .description("test description")
                            .recruitStatus(RecruitStatus.RECRUITING)
                            .maxRecruitCount(10)
+                           .category(category)
                            .build();
         em.persist(group);
         Long groupId = group.getId();
@@ -1409,6 +1445,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                              .description("test description%d".formatted(j))
                              .recruitStatus(RecruitStatus.RECRUITING)
                              .maxRecruitCount(10)
+                             .category(category)
                              .build();
                 em.persist(group);
                 j += 1;
@@ -1466,6 +1503,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                              .description("test description%d".formatted(j))
                              .recruitStatus(RecruitStatus.RECRUITING)
                              .maxRecruitCount(10)
+                             .category(category)
                              .build();
                 em.persist(group);
                 j += 1;
@@ -1528,6 +1566,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                              .description("test description%d".formatted(j))
                              .recruitStatus(RecruitStatus.RECRUITING)
                              .maxRecruitCount(10)
+                             .category(category)
                              .build();
                 em.persist(group);
                 j += 1;
@@ -1594,6 +1633,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                              .description("test description%d".formatted(j))
                              .recruitStatus(RecruitStatus.RECRUITING)
                              .maxRecruitCount(10)
+                             .category(category)
                              .build();
                 em.persist(group);
                 j += 1;
@@ -1662,6 +1702,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                              .description("test description%d".formatted(j))
                              .recruitStatus(RecruitStatus.RECRUITING)
                              .maxRecruitCount(10)
+                             .category(category)
                              .build();
                 em.persist(group);
                 j += 1;
@@ -1728,6 +1769,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                              .description("test description%d".formatted(j))
                              .recruitStatus(RecruitStatus.RECRUITING)
                              .maxRecruitCount(10)
+                             .category(category)
                              .build();
                 em.persist(group);
                 j += 1;
@@ -1796,6 +1838,7 @@ class GroupMembershipRepositoryTest extends SpringBootTestSupporter {
                              .description("test description%d".formatted(j))
                              .recruitStatus(RecruitStatus.RECRUITING)
                              .maxRecruitCount(10)
+                             .category(category)
                              .build();
                 em.persist(group);
                 j += 1;
