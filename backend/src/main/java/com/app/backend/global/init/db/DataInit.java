@@ -22,14 +22,16 @@ public class DataInit {
     @EventListener(ApplicationReadyEvent.class)
     @Transactional
     void init() {
-        Member member = Member.builder()
-                              .username("admin")
-                              .password(passwordEncoder.encode("admin"))
-                              .nickname("admin")
-                              .role("ADMIN")
-                              .provider(Provider.LOCAL)
-                              .build();
-        memberRepository.save(member);
+        if (memberRepository.findAll().stream().noneMatch(m -> m.getRole().equals("admin"))) {
+            Member member = Member.builder()
+                                  .username("admin")
+                                  .password(passwordEncoder.encode("admin"))
+                                  .nickname("admin")
+                                  .role("ADMIN")
+                                  .provider(Provider.LOCAL)
+                                  .build();
+            memberRepository.save(member);
+        }
     }
 
 }
