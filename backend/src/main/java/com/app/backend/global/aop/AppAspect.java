@@ -2,6 +2,7 @@ package com.app.backend.global.aop;
 
 import com.app.backend.global.dto.response.ApiResponse;
 import com.app.backend.global.module.CustomPageModule;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -34,11 +35,12 @@ public class AppAspect {
                 Object         body        = apiResponse.getData();
 
                 if (body instanceof Page<?>) {
-                    String json = objectMapper.writeValueAsString(body);
+                    String   json     = objectMapper.writeValueAsString(body);
+                    JsonNode jsonNode = objectMapper.readTree(json);
                     return ApiResponse.of(apiResponse.getIsSuccess(),
                                           apiResponse.getCode(),
                                           apiResponse.getMessage(),
-                                          json);
+                                          jsonNode);
                 }
             }
 
