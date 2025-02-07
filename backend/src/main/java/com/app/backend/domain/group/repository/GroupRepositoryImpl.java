@@ -143,7 +143,7 @@ public class GroupRepositoryImpl implements GroupRepositoryCustom {
      * @return 모임 목록
      */
     @Override
-    public List<Group> findAllByCategoryAndNameContainingAndRegion(@NotNull final String categoryName,
+    public List<Group> findAllByCategoryAndNameContainingAndRegion(final String categoryName,
                                                                    final String name,
                                                                    final String province,
                                                                    final String city,
@@ -151,8 +151,12 @@ public class GroupRepositoryImpl implements GroupRepositoryCustom {
                                                                    @NotNull final Boolean disabled) {
         QGroup group = QGroup.group;
         return jpaQueryFactory.selectFrom(group)
-                              .where(group.category.name.eq(categoryName),
-                                     group.name.contains(name),
+                              .where(categoryName != null && !categoryName.isBlank()
+                                     ? group.category.name.eq(categoryName)
+                                     : null,
+                                     name != null && !name.isBlank()
+                                     ? group.name.contains(name)
+                                     : null,
                                      getRegionCondition(province, city, town, group),
                                      group.disabled.eq(disabled))
                               .fetch();
@@ -170,7 +174,7 @@ public class GroupRepositoryImpl implements GroupRepositoryCustom {
      * @return 모임 페이징 목록
      */
     @Override
-    public Page<Group> findAllByCategoryAndNameContainingAndRegion(@NotNull final String categoryName,
+    public Page<Group> findAllByCategoryAndNameContainingAndRegion(final String categoryName,
                                                                    final String name,
                                                                    final String province,
                                                                    final String city,
@@ -179,8 +183,12 @@ public class GroupRepositoryImpl implements GroupRepositoryCustom {
                                                                    @NotNull final Pageable pageable) {
         QGroup group = QGroup.group;
         List<Group> content = jpaQueryFactory.selectFrom(group)
-                                             .where(group.category.name.eq(categoryName),
-                                                    group.name.contains(name),
+                                             .where(categoryName != null && !categoryName.isBlank()
+                                                    ? group.category.name.eq(categoryName)
+                                                    : null,
+                                                    name != null && !name.isBlank()
+                                                    ? group.name.contains(name)
+                                                    : null,
                                                     getRegionCondition(province, city, town, group),
                                                     group.disabled.eq(disabled))
                                              .orderBy(getSortCondition(pageable, group))
@@ -189,8 +197,12 @@ public class GroupRepositoryImpl implements GroupRepositoryCustom {
                                              .fetch();
         JPAQuery<Long> count = jpaQueryFactory.select(group.count())
                                               .from(group)
-                                              .where(group.category.name.eq(categoryName),
-                                                     group.name.contains(name),
+                                              .where(categoryName != null && !categoryName.isBlank()
+                                                     ? group.category.name.eq(categoryName)
+                                                     : null,
+                                                     name != null && !name.isBlank()
+                                                     ? group.name.contains(name)
+                                                     : null,
                                                      getRegionCondition(province, city, town, group),
                                                      group.disabled.eq(disabled));
         return PageableExecutionUtils.getPage(content, pageable, count::fetchOne);
