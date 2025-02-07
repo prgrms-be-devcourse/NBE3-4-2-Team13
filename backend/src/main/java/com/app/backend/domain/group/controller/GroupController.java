@@ -3,7 +3,6 @@ package com.app.backend.domain.group.controller;
 import com.app.backend.domain.group.constant.GroupMessageConstant;
 import com.app.backend.domain.group.dto.request.GroupRequest;
 import com.app.backend.domain.group.dto.response.GroupResponse;
-import com.app.backend.domain.group.dto.response.GroupResponse.ListInfo;
 import com.app.backend.domain.group.exception.GroupException;
 import com.app.backend.domain.group.exception.GroupMembershipException;
 import com.app.backend.domain.group.service.GroupMembershipService;
@@ -30,6 +29,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -66,17 +66,25 @@ public class GroupController {
     }
 
     @GetMapping
-    public ApiResponse<Page<ListInfo>> getGroups(@RequestBody @Valid final GroupRequest.Search requestDto,
-                                                 BindingResult bindingResult,
-                                                 @PageableDefault(size = 10,
-                                                                  page = 0,
-                                                                  sort = "createdAt",
-                                                                  direction = Direction.DESC) Pageable pageable) {
-        if (bindingResult.hasErrors())
-            throw new GroupException(GlobalErrorCode.INVALID_INPUT_VALUE);
-
+    public ApiResponse<Page<GroupResponse.ListInfo>> getGroups(
+            @RequestParam(required = false) final String categoryName,
+            @RequestParam(required = false) final String province,
+            @RequestParam(required = false) final String city,
+            @RequestParam(required = false) final String town,
+            @RequestParam(required = false) final String keyword,
+            @PageableDefault(size = 10,
+                             page = 0,
+                             sort = "createdAt",
+                             direction = Direction.DESC) Pageable pageable
+    ) {
+        GroupRequest.Search requestDto = GroupRequest.Search.builder()
+                                                            .categoryName(categoryName)
+                                                            .name(keyword)
+                                                            .province(province)
+                                                            .city(city)
+                                                            .town(town)
+                                                            .build();
         Page<GroupResponse.ListInfo> responseList = groupService.getGroupsBySearch(requestDto, pageable);
-
         return ApiResponse.of(true, HttpStatus.OK, GroupMessageConstant.READ_GROUPS_SUCCESS, responseList);
     }
 
@@ -98,6 +106,7 @@ public class GroupController {
     @DeleteMapping("/{groupId}")
     public ApiResponse<Void> deleteGroup(@PathVariable @Min(1) final Long groupId,
                                          @AuthenticationPrincipal final UserDetails userDetails) {
+
         boolean flag = groupService.deleteGroup(groupId, ((MemberDetails) userDetails).getId());
 
         if (!flag)
