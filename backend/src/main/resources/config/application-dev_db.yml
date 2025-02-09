@@ -34,7 +34,7 @@ spring:
     mongodb:
       uri: ${MONGO_DB_URI}
   file:
-    base-dir: /uploads
+    base-dir: C:/uploads
     img-dir: http://localhost:8080/images
 
 logging:
