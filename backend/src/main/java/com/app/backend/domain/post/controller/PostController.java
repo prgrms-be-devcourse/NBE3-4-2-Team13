@@ -4,11 +4,13 @@ import com.app.backend.domain.member.entity.MemberDetails;
 import com.app.backend.domain.post.dto.req.PostReqDto;
 import com.app.backend.domain.post.dto.resp.PostRespDto;
 import com.app.backend.domain.post.entity.Post;
+import com.app.backend.domain.post.entity.PostStatus;
 import com.app.backend.domain.post.exception.PostException;
 import com.app.backend.domain.post.service.post.PostService;
 import com.app.backend.global.dto.response.ApiResponse;
 import com.app.backend.global.error.exception.GlobalErrorCode;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -39,16 +41,13 @@ public class PostController {
 
     @GetMapping
     public ApiResponse<?> getPosts(
-            @Valid @ModelAttribute final PostReqDto.SearchPostDto searchPost,
-            @PageableDefault Pageable pageable,
-            final BindingResult bindingResult
+            @RequestParam final Long groupId,
+            @RequestParam(defaultValue = "") final String search,
+            @RequestParam(defaultValue = "ALL") final PostStatus postStatus,
+            @PageableDefault Pageable pageable
     ) {
 
-        if (bindingResult.hasErrors()) {
-            throw new PostException(GlobalErrorCode.INVALID_INPUT_VALUE);
-        }
-
-        Page<PostRespDto.GetPostListDto> posts = postService.getPostsBySearch(searchPost,pageable);
+        Page<PostRespDto.GetPostListDto> posts = postService.getPostsBySearch(groupId, search, postStatus, pageable);
 
         return ApiResponse.of(true, HttpStatus.OK, "게시물 목록을 성공적으로 불러왔습니다", posts);
     }
@@ -110,7 +109,7 @@ public class PostController {
             throw new PostException(GlobalErrorCode.INVALID_INPUT_VALUE);
         }
 
-        Page<PostRespDto.GetPostListDto> posts = postService.getPostsByUser(searchPost,pageable,memberDetails.getId());
+        Page<PostRespDto.GetPostListDto> posts = postService.getPostsByUser(searchPost, pageable, memberDetails.getId());
 
         return ApiResponse.of(true, HttpStatus.OK, "게시물 목록을 성공적으로 불러왔습니다", posts);
     }
