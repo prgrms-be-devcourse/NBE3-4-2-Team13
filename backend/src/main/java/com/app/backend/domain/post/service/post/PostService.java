@@ -88,9 +88,9 @@ public class PostService {
     }
 
 
-    public Page<PostRespDto.GetPostListDto> getPostsBySearch(final PostReqDto.SearchPostDto searchPost, final Pageable pageable) {
+    public Page<PostRespDto.GetPostListDto> getPostsBySearch(final Long groupId, final String search, final PostStatus postStatus, final Pageable pageable) {
         return postRepository
-                .findAllBySearchStatus(searchPost.getGroupId(), searchPost.getSearch(), searchPost.getPostStatus(), false, pageable)
+                .findAllBySearchStatus(groupId, search, postStatus, false, pageable)
                 .map(PostRespDto::toGetPostList);
     }
 
@@ -112,8 +112,8 @@ public class PostService {
         if (savePost.getPostStatus().equals(PostStatus.NOTICE) && !membership.getGroupRole().equals(GroupRole.LEADER)) {
             throw new PostException(PostErrorCode.POST_UNAUTHORIZATION);
         }
-
-        Post post = postRepository.save(savePost.toEntity(memberId));
+        Member member = getMemberEntity(memberId);
+        Post post = postRepository.save(savePost.toEntity(memberId,member.getNickname()));
 
         saveFiles(files, post);
 
