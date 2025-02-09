@@ -91,7 +91,7 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
     }
 
     private BooleanExpression checkPostStatus(final QPost post, final PostStatus postStatus) {
-        return (postStatus == PostStatus.All) ? null : post.postStatus.eq(postStatus);
+        return (postStatus == PostStatus.ALL) ? null : post.postStatus.eq(postStatus);
     }
 
     private boolean isValidColumn(String column) {
