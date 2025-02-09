@@ -40,6 +40,10 @@ public class Post extends BaseEntity {
     @Column(nullable = false)
     private Long memberId;
 
+    @Setter
+    @Column(nullable = false)
+    private String nickName;
+
 //    Member Entity 연관관계
 //    @JoinColumn(name = "member_id")
 //    @ManyToOne(fetch = FetchType.LAZY)
