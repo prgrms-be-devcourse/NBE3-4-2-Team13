@@ -25,6 +25,6 @@ public class FileConfig implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/images/**")
-                .addResourceLocations("file://"+ BASE_DIR + "/");
+                .addResourceLocations("file:///"+ BASE_DIR + "/");
     }
 }
