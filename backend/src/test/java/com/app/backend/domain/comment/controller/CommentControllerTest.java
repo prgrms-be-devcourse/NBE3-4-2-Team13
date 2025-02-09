@@ -67,11 +67,12 @@ public class CommentControllerTest {
 		memberDetails = new MemberDetails(testMember);
 
 		testPost = Post.builder()
-			.title("테스트 게시글")
-			.content("테스트 내용")
-			.postStatus(PostStatus.PUBLIC)
-			.groupId(1L)
-			.memberId(testMember.getId())
+				.title("테스트 게시글")
+				.content("테스트 내용")
+				.postStatus(PostStatus.PUBLIC)
+				.groupId(1L)
+				.memberId(testMember.getId())
+				.nickName("테스트 닉")
 			.build();
 
 		testPost = postRepository.save(testPost);

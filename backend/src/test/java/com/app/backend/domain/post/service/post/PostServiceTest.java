@@ -1084,6 +1084,7 @@ public class PostServiceTest {
                     .postStatus(PostStatus.PUBLIC)
                     .groupId(1L)
                     .memberId(1L)
+                    .nickName("테스트 닉")
                     .build();
             postRepository.save(post);
         }
@@ -1092,7 +1093,7 @@ public class PostServiceTest {
 
         Pageable pageable = PageRequest.of(0, 10, Sort.unsorted());
 
-        Page<Post> result = postRepository.findAllBySearchStatus(1L, "", PostStatus.All, false, pageable);
+        Page<Post> result = postRepository.findAllBySearchStatus(1L, "", PostStatus.ALL, false, pageable);
 
         // Then
         assertEquals(15, result.getTotalElements()); // 전체 데이터 개수 확인
@@ -1110,6 +1111,7 @@ public class PostServiceTest {
                     .postStatus(PostStatus.PUBLIC)
                     .groupId(1L)
                     .memberId(1L)
+                    .nickName("테스트닉")
                     .build();
             postRepository.save(post);
         }
@@ -1118,7 +1120,7 @@ public class PostServiceTest {
 
         Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "title"));
 
-        Page<Post> result = postRepository.findAllBySearchStatus(1L, "", PostStatus.All, false, pageable);
+        Page<Post> result = postRepository.findAllBySearchStatus(1L, "", PostStatus.ALL, false, pageable);
 
         // Then
         assertEquals(9, result.getTotalElements()); // 전체 데이터 개수 확인
@@ -1136,6 +1138,7 @@ public class PostServiceTest {
                     .postStatus(PostStatus.PUBLIC)
                     .groupId(1L)
                     .memberId(1L)
+                    .nickName("테스트 닉")
                     .build();
             postRepository.save(post);
         }
@@ -1144,7 +1147,7 @@ public class PostServiceTest {
 
         Pageable pageable = PageRequest.of(1, 10, Sort.by(Sort.Direction.DESC, "title"));
 
-        Page<Post> result = postRepository.findAllBySearchStatus(1L, "", PostStatus.All, false, pageable);
+        Page<Post> result = postRepository.findAllBySearchStatus(1L, "", PostStatus.ALL, false, pageable);
 
         // Then
         assertEquals(15, result.getTotalElements()); // 전체 데이터 개수 확인
@@ -1162,6 +1165,7 @@ public class PostServiceTest {
                     .postStatus(PostStatus.PUBLIC)
                     .groupId(1L)
                     .memberId(1L)
+                    .nickName("테스트 닉")
                     .build();
             postRepository.save(post);
         }
@@ -1170,7 +1174,7 @@ public class PostServiceTest {
 
         Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "title"));
 
-        Page<Post> result = postRepository.findAllBySearchStatus(1L, "test", PostStatus.All, false, pageable);
+        Page<Post> result = postRepository.findAllBySearchStatus(1L, "test", PostStatus.ALL, false, pageable);
 
         // Then
         assertEquals(0, result.getContent().size());
@@ -1186,6 +1190,7 @@ public class PostServiceTest {
                     .postStatus(PostStatus.PUBLIC)
                     .groupId(1L)
                     .memberId(1L)
+                    .nickName("테스트 닉")
                     .build();
             postRepository.save(post);
         }
@@ -1195,7 +1200,7 @@ public class PostServiceTest {
         Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "fail"));
 
         // Then
-        assertThatThrownBy(() -> postRepository.findAllBySearchStatus(1L, "", PostStatus.All, false, pageable))
+        assertThatThrownBy(() -> postRepository.findAllBySearchStatus(1L, "", PostStatus.ALL, false, pageable))
                 .isInstanceOf(DomainException.class)
                 .hasFieldOrPropertyWithValue("domainErrorCode", GlobalErrorCode.INVALID_INPUT_VALUE)
                 .hasMessage(GlobalErrorCode.INVALID_INPUT_VALUE.getMessage());

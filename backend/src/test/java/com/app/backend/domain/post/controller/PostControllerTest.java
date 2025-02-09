@@ -153,7 +153,7 @@ public class PostControllerTest {
         Pageable pageable = PageRequest.of(0, 10, Sort.by("createdAt").descending());
         Page<PostRespDto.GetPostListDto> mockPage = new PageImpl<>(List.of(PostRespDto.toGetPostList(post)), pageable, 1);
 
-        given(postService.getPostsBySearch(any(), any())).willReturn(mockPage);
+        given(postService.getPostsBySearch(any(), any(), any(), any())).willReturn(mockPage);
 
         // When
         ResultActions resultActions = mockMvc.perform(get(BASE_URL)
