@@ -29,6 +29,7 @@ public class PostRespDto {
         private final String content;
         private final PostStatus postStatus;
         private final String nickName;
+        private final Long memberId;
         private final Long groupId;
         private final String createdAt;
         private final String modifiedAt;
@@ -47,6 +48,7 @@ public class PostRespDto {
                 .content(post.getContent())
                 .postStatus(post.getPostStatus())
                 .nickName(member.getNickname())
+                .memberId(member.getId())
                 .groupId(post.getGroupId())
                 .createdAt(AppUtil.localDateTimeToString(post.getCreatedAt()))
                 .modifiedAt(AppUtil.localDateTimeToString(post.getModifiedAt()))
@@ -61,9 +63,9 @@ public class PostRespDto {
     public static class GetPostListDto {
         private final Long postId;
         private final String title;
-        private final String content;
         private final PostStatus postStatus;
         private final Long memberId;
+        private final String nickName;
         private final String createdAt;
     }
 
@@ -71,9 +73,9 @@ public class PostRespDto {
         return GetPostListDto.builder()
                 .postId(post.getId())
                 .title(post.getTitle())
-                .content(post.getContent())
                 .postStatus(post.getPostStatus())
                 .memberId(post.getMemberId())
+                .nickName(post.getNickName())
                 .createdAt(AppUtil.localDateTimeToString(post.getCreatedAt()))
                 .build();
     }

@@ -26,7 +26,7 @@ public class PostReqDto {
         @JsonProperty(defaultValue = "")
         private String search;
 
-        @JsonProperty(defaultValue = "All")
+        @JsonProperty(defaultValue = "ALL")
         private PostStatus postStatus;
     }
 
@@ -65,7 +65,7 @@ public class PostReqDto {
         @Positive
         private Long groupId;
 
-        public Post toEntity(Long memberId) {
+        public Post toEntity(Long memberId, String nickName) {
             return Post
                     .builder()
                     .title(this.title)
@@ -73,6 +73,7 @@ public class PostReqDto {
                     .postStatus(this.postStatus)
                     .groupId(this.groupId)
                     .memberId(memberId)
+                    .nickName(nickName)
                     .build();
         }
     }
