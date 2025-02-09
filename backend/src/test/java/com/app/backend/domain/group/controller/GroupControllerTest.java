@@ -217,13 +217,16 @@ class GroupControllerTest extends WebMvcTestSupporter {
                                                             .city("test city10")
                                                             .town("test town10")
                                                             .build();
-        String requestBody = objectMapper.writeValueAsString(requestDto);
 
         //When
         ResultActions resultActions = mockMvc.perform(get("/api/v1/groups")
                                                               .accept(MediaType.APPLICATION_JSON_VALUE)
                                                               .contentType(MediaType.APPLICATION_JSON_VALUE)
-                                                              .content(requestBody)
+                                                              .param("categoryName", "category")
+                                                              .param("keyword", "1")
+                                                              .param("province", "test province10")
+                                                              .param("city", "test city10")
+                                                              .param("town", "test town10")
                                                               .param("page", "0")
                                                               .param("size", "10")
                                                               .param("sort", "createdAt,DESC"));

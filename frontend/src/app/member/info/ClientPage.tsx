@@ -13,14 +13,7 @@ export default function ClientPage() {
     // 날짜 포맷팅 함수
     const formatDate = (dateString: string) => {
         if (!dateString) return "정보 없음";
-        const date = new Date(dateString);
-        return date.toLocaleDateString('ko-KR', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        return dateString.split('T')[0]; 
     };
 
     // 권한 표시 포맷팅
@@ -71,7 +64,6 @@ export default function ClientPage() {
 
         fetchMyGroups();
     }, []);
-
     return (
         <div className="container mx-auto p-4 max-w-2xl">
             <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
@@ -88,7 +80,7 @@ export default function ClientPage() {
 
                         <div className="font-semibold">비밀번호</div>
                         <div className="col-span-2">{loginMember.password}</div>
-
+                        
                         <div className="font-semibold">가입일</div>
                         <div className="col-span-2">{formatDate(loginMember.createdAt)}</div>
 

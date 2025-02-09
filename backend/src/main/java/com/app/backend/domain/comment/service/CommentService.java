@@ -30,8 +30,8 @@ public class CommentService {
 	private final MemberRepository memberRepository;
 
 	//댓글 조회
-	private Comment getCommentValidate(Long commentId){
-		return commentRepository.findByIdAndDisabled(commentId, false)
+	private Comment getCommentValidate(Long id){
+		return commentRepository.findByIdAndDisabled(id, false)
 			.orElseThrow(()-> new CommentException(CommentErrorCode.COMMENT_NOT_FOUND));
 	}
 
@@ -149,14 +149,24 @@ public class CommentService {
 	//대댓글 수정
 	public CommentResponse.ReplyDto updateReply(Long replyId, Long id, CommentCreateRequest req) {
 
-		Comment comment = getCommentValidate(replyId);
+		Comment reply = getCommentValidate(replyId);
 
 		validateCommentContent(req.getContent());
 
-		validateAuthor(comment, id);
+		validateAuthor(reply, id);
 
-		comment.update(req.getContent());
+		reply.update(req.getContent());
 
-		return CommentResponse.ReplyDto.from(comment);
+		return CommentResponse.ReplyDto.from(reply);
+	}
+
+	//대댓글 삭제
+	public void deleteReply(Long replyId, Long id) {
+
+		Comment reply = getCommentValidate(replyId);
+
+		validateAuthor(reply, id);
+
+		reply.delete();
 	}
 }

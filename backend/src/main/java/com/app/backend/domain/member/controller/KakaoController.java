@@ -52,7 +52,6 @@ public class KakaoController {
 		// Access Token은 응답 본문에 포함
 		Map<String, String> responseBody = new HashMap<>();
 		responseBody.put("accessToken", tokenDto.accessToken());
-		responseBody.put("nickname", tokenDto.nickname());
 		util.setCookies(refreshTokenCookie, response);
 
 		return ResponseEntity.ok(responseBody);

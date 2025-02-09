@@ -129,4 +129,20 @@ public class CommentController {
 			response
 		);
 	}
+
+	//대댓글 삭제
+	@DeleteMapping("/{id}/reply")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public ApiResponse<Void> deleteReply(
+		@PathVariable(name = "id") Long replyId,
+		@AuthenticationPrincipal MemberDetails memberDetails
+	) {
+		commentService.deleteReply(replyId, memberDetails.getId());
+
+		return ApiResponse.of(
+			true,
+			HttpStatus.NO_CONTENT,
+			"%d번 답글이 삭제되었습니다.".formatted(replyId)
+		);
+	}
 }

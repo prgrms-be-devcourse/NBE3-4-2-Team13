@@ -86,7 +86,6 @@ export function ClientLayout({children,}: React.ComponentProps<typeof NextThemes
         if (response.ok) {
           const responseData = await response.json();
           
-          console.log("레이아웃 : "+responseData.data.nickname);
           if (responseData.isSuccess) {
             const memberData = responseData.data;
             setLoginMember({
@@ -128,6 +127,10 @@ export function ClientLayout({children,}: React.ComponentProps<typeof NextThemes
   const logout = async () => {
     try {
       const token = localStorage.getItem('accessToken');
+      if (!token) {
+        setNoLoginMember();
+        return;
+      }
       // 백엔드에 로그아웃 요청
       const response = await fetch('http://localhost:8080/api/v1/members/logout', {
         method: 'POST',

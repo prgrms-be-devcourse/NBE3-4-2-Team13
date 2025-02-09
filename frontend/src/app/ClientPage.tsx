@@ -7,7 +7,7 @@ import { use, useEffect, useState } from "react"; // React Context API을 통해
 
 export default function ClientPage() {
     // frontend/src/app/ClientLayout.tsx 의 `<LoginMemberContext value={loginMemberContextValue}>` 를 통해서 공유된 value 에서 필요한 특정 값들만 가져온다.
-    const { isLogin } = use(LoginMemberContext);
+    const { isLogin, loginMember } = use(LoginMemberContext);
     const [userNickname, setUserNickname] = useState("");
 
     // 프론트엔드 콜백 주소로 수정
@@ -18,8 +18,8 @@ export default function ClientPage() {
         if (accessToken) {
             try {
                 const payload = JSON.parse(atob(accessToken.split('.')[1]));
-                console.log('사용자 정보:', payload);
-                setUserNickname(localStorage.getItem('nickname') || "");
+                // console.log('사용자 정보:', payload);
+                setUserNickname(loginMember.nickname);
             } catch (error) {
                 console.error('토큰 디코드 실패:', error);
                 setUserNickname("사용자");

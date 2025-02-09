@@ -4,6 +4,5 @@ public record TokenDto(
 	String id,
 	String accessToken,
 	String refreshToken,
-	String nickname,
 	String role
 ) {} 

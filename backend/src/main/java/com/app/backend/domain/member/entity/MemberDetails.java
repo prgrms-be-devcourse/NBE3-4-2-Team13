@@ -17,6 +17,8 @@ public class MemberDetails implements UserDetails {
 	private final String nickname;
 	private final String provider;
 	private final String role;
+	private final String createdAt;
+	private final String modifiedAt;
 	private final boolean disabled;
 
 	public MemberDetails(Member member) {
@@ -27,6 +29,8 @@ public class MemberDetails implements UserDetails {
 		this.disabled = member.getDisabled();
 		this.password = member.getPassword();
 		this.provider = String.valueOf(member.getProvider());
+		this.createdAt = String.valueOf(member.getCreatedAt());
+		this.modifiedAt = String.valueOf(member.getModifiedAt());
 	}
 
 	public static MemberDetails of(Member member) {

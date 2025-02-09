@@ -7,6 +7,8 @@ public record MemberLoginResponseDto(
     String username,
     String nickname,
     String role,
+    String createdAt,
+    String modifiedAt,
     String accessToken,
     String refreshToken
 ) {
@@ -16,6 +18,8 @@ public record MemberLoginResponseDto(
             member.getUsername(),
             member.getNickname(),
             member.getRole(),
+            String.valueOf(member.getCreatedAt()),
+            String.valueOf(member.getModifiedAt()),
             accessToken,
             refreshToken
         );

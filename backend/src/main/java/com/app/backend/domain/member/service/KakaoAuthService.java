@@ -58,7 +58,7 @@ public class KakaoAuthService {
 
 			memberRepository.save(member);
 
-			return new TokenDto(userInfo.id() ,accessToken, refreshToken, userInfo.nickname(), "USER");
+			return new TokenDto(userInfo.id() ,accessToken, refreshToken, "USER");
 		} catch (Exception e){
 			log.error("카카오 로그인 처리 중 오류: {}", e.getMessage());
 			if (e.getMessage().contains("authorization code not found")) {

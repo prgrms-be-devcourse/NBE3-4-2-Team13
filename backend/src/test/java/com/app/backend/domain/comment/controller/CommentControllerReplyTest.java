@@ -231,4 +231,44 @@ public class CommentControllerReplyTest {
 			.andExpect(jsonPath("$.message").value("댓글 내용이 유효하지 않습니다"));
 	}
 
+	@Test
+	@DisplayName("대댓글 삭제 성공")
+	void deleteReply() throws Exception {
+
+		mvc.perform(
+				delete("/api/v1/comment/" + testReply.getId() + "/reply")
+					.with(user(memberDetails))
+			)
+			.andDo(print())
+
+			.andExpect(status().isNoContent())
+			.andExpect(jsonPath("$.isSuccess").value(true))
+			.andExpect(jsonPath("$.code").value("204"))
+			.andExpect(jsonPath("$.message").value("%d번 답글이 삭제되었습니다.".formatted(testReply.getId())));
+	}
+
+	@Test
+	@DisplayName("대댓글 삭제 실패 (작성자가 아닌 경우)")
+	void deleteReply2() throws Exception {
+
+		Member otherMember = memberRepository.save(Member.builder()
+			.username("other")
+			.password("password")
+			.nickname("다른사용자")
+			.role("USER")
+			.build());
+
+		mvc.perform(
+				delete("/api/v1/comment/" + testReply.getId() + "/reply")
+					.with(user(new MemberDetails(otherMember)))
+			)
+			.andDo(print())
+
+
+			.andExpect(status().isForbidden())
+			.andExpect(jsonPath("$.isSuccess").value(false))
+			.andExpect(jsonPath("$.code").value("CM003"))
+			.andExpect(jsonPath("$.message").value("댓글에 대한 권한이 없습니다"));
+	}
+
 }

@@ -47,8 +47,8 @@ export default function ClientPage() {
                 password: data.password || '',
                 nickname: data.nickname,
                 provider: 'LOCAL',
-                createdAt: new Date().toISOString(),
-                modifiedAt: new Date().toISOString(),
+                createdAt: data.createdAt,
+                modifiedAt: data.modifiedAt,
                 authorities: [data.role]
             });
     
