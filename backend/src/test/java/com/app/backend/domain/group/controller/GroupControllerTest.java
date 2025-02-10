@@ -216,7 +216,43 @@ class GroupControllerTest extends WebMvcTestSupporter {
     @DisplayName("[성공] 모임 목록 조회")
     void getGroups() throws Exception {
         //Given
-        CustomPageJsonSerializer annotation = createFakeAnnotation();
+        CustomPageJsonSerializer annotation = (CustomPageJsonSerializer) Proxy.newProxyInstance(
+                CustomPageJsonSerializer.class.getClassLoader(),
+                new Class[]{CustomPageJsonSerializer.class},
+                (proxy, method, args) -> {
+                    switch (method.getName()) {
+                        case "content":
+                            return true;
+                        case "hasContent":
+                            return false;
+                        case "totalPages":
+                            return true;
+                        case "totalElements":
+                            return true;
+                        case "numberOfElements":
+                            return true;
+                        case "size":
+                            return false;
+                        case "number":
+                            return true;
+                        case "hasPrevious":
+                            return true;
+                        case "hasNext":
+                            return true;
+                        case "isFirst":
+                            return false;
+                        case "isLast":
+                            return false;
+                        case "sort":
+                            return false;
+                        case "empty":
+                            return false;
+                        default:
+                            return method.getDefaultValue();
+                    }
+                }
+        );
+
         objectMapper = new ObjectMapper();
         objectMapper.registerModules(new JavaTimeModule(), new CustomPageModule(annotation));
         objectMapper.enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -653,45 +689,6 @@ class GroupControllerTest extends WebMvcTestSupporter {
                          assertThat(result.getResolvedException().getMessage()).isEqualTo(errorCode.getMessage());
                      })
                      .andDo(print());
-    }
-
-    private CustomPageJsonSerializer createFakeAnnotation() {
-        return (CustomPageJsonSerializer) Proxy.newProxyInstance(
-                CustomPageJsonSerializer.class.getClassLoader(),
-                new Class[]{CustomPageJsonSerializer.class},
-                (proxy, method, args) -> {
-                    switch (method.getName()) {
-                        case "content":
-                            return true;
-                        case "hasContent":
-                            return true;
-                        case "totalPages":
-                            return true;
-                        case "totalElements":
-                            return true;
-                        case "numberOfElements":
-                            return true;
-                        case "size":
-                            return true;
-                        case "number":
-                            return true;
-                        case "hasPrevious":
-                            return true;
-                        case "hasNext":
-                            return true;
-                        case "isFirst":
-                            return true;
-                        case "isLast":
-                            return true;
-                        case "sort":
-                            return true;
-                        case "empty":
-                            return true;
-                        default:
-                            return method.getDefaultValue();
-                    }
-                }
-        );
     }
 
 }
