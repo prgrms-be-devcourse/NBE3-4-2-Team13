@@ -8,6 +8,7 @@ import com.app.backend.domain.group.exception.GroupMembershipException;
 import com.app.backend.domain.group.service.GroupMembershipService;
 import com.app.backend.domain.group.service.GroupService;
 import com.app.backend.domain.member.entity.MemberDetails;
+import com.app.backend.global.annotation.CustomPageJsonSerializer;
 import com.app.backend.global.dto.response.ApiResponse;
 import com.app.backend.global.error.exception.GlobalErrorCode;
 import jakarta.validation.Valid;
@@ -66,6 +67,7 @@ public class GroupController {
     }
 
     @GetMapping
+    @CustomPageJsonSerializer
     public ApiResponse<Page<GroupResponse.ListInfo>> getGroups(
             @RequestParam(required = false) final String categoryName,
             @RequestParam(required = false) final String province,
