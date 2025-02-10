@@ -83,7 +83,7 @@ public class PostService {
 
         PostRespDto.GetPostDto getPostDto = PostRespDto.toGetPost(post, member, images, documents);
 
-        redisRepository.save(redisKey, getPostDto, 30, TimeUnit.MINUTES);
+        redisRepository.save(redisKey, getPostDto, 5, TimeUnit.MINUTES);
 
         return getPostDto;
     }
