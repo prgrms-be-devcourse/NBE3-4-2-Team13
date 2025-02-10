@@ -61,7 +61,7 @@ export default function ClientPage() {
                                 회원 관리
                             </button>
                             <button
-                                onClick={() => router.push('/admin/category')}
+                                onClick={() => router.push('/admin/categories')}
                                 className="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-md hover:bg-gray-100"
                             >
                                 카테고리 관리

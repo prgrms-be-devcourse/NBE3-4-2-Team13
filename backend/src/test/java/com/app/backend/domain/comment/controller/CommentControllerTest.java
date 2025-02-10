@@ -357,8 +357,10 @@ public class CommentControllerTest {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.data.content").isArray())
 			.andExpect(jsonPath("$.data.content.length()").value(10))
-			.andExpect(jsonPath("$.data.first").value(true))
-			.andExpect(jsonPath("$.data.last").value(false));
+			.andExpect(jsonPath("$.data.totalElements").value(15))
+			.andExpect(jsonPath("$.data.totalPages").value(2))
+			.andExpect(jsonPath("$.data.hasNext").value(true))
+			.andExpect(jsonPath("$.data.isLast").value(false));
 
 		mvc.perform(
 				get("/api/v1/comment/" + testPostId)
@@ -373,8 +375,10 @@ public class CommentControllerTest {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.data.content").isArray())
 			.andExpect(jsonPath("$.data.content.length()").value(5))
-			.andExpect(jsonPath("$.data.first").value(false))
-			.andExpect(jsonPath("$.data.last").value(true));
+			.andExpect(jsonPath("$.data.totalElements").value(15))
+			.andExpect(jsonPath("$.data.totalPages").value(2))
+			.andExpect(jsonPath("$.data.hasNext").value(false))
+			.andExpect(jsonPath("$.data.isLast").value(true));
 	}
 
 	@Test
@@ -416,7 +420,6 @@ public class CommentControllerTest {
 			.andExpect(jsonPath("$.code").value("200"))
 			.andExpect(jsonPath("$.message").exists())
 			.andExpect(jsonPath("$.data.content").isArray())
-			.andExpect(jsonPath("$.data.first").value(true))
 			.andExpect(jsonPath("$.data.content.length()").value(0))
 			.andExpect(jsonPath("$.data.totalElements").value(0))
 			.andExpect(jsonPath("$.data.totalPages").value(0));

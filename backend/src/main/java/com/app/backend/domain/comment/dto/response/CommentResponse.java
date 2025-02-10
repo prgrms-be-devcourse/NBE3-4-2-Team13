@@ -31,6 +31,32 @@ public class CommentResponse {
 		}
 	}
 
+	@Getter
+	@Builder
+	public static class ReplyList {
+		private Long id;
+		private String content;
+		private Long postId;
+		private Long memberId;
+		private String nickname;
+		private Long parentId;
+		private LocalDateTime createdAt;
+		private LocalDateTime modifiedAt;
+
+		public static ReplyList from(Comment reply) {
+			return ReplyList.builder()
+				.id(reply.getId())
+				.content(reply.getContent())
+				.postId(reply.getPost().getId())
+				.memberId(reply.getMember().getId())
+				.nickname(reply.getMember().getNickname())
+				.parentId(reply.getParent().getId())
+				.createdAt(reply.getCreatedAt())
+				.modifiedAt(reply.getModifiedAt())
+				.build();
+		}
+	}
+
 
 	@Getter
 	@Builder

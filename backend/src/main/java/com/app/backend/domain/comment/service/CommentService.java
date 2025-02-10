@@ -55,6 +55,13 @@ public class CommentService {
 		}
 	}
 
+	// 부모 댓글이 삭제되어도 대댓글 조회, 추가 가능
+	private Comment getCommentById(Long id) {
+		return commentRepository.findById(id)
+			.orElseThrow(() -> new CommentException(CommentErrorCode.COMMENT_NOT_FOUND));
+
+	}
+
 	// 댓글 작성
 	@Transactional
 	public CommentResponse.CommentDto createComment(Long postId, Long memberId, CommentCreateRequest req) {
@@ -123,7 +130,7 @@ public class CommentService {
 	@Transactional
 	public CommentResponse.ReplyDto createReply(Long commentId, Long memberId, CommentCreateRequest req) {
 
-		Comment parentComment = getCommentValidate(commentId);
+		Comment parentComment = getCommentById(commentId);
 
 		Member member = memberRepository.findByIdAndDisabled(memberId, false)
 			.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
@@ -149,7 +156,7 @@ public class CommentService {
 	//대댓글 수정
 	public CommentResponse.ReplyDto updateReply(Long replyId, Long id, CommentCreateRequest req) {
 
-		Comment reply = getCommentValidate(replyId);
+		Comment reply = getCommentValidate(replyId); //대댓글 조회
 
 		validateCommentContent(req.getContent());
 
@@ -163,10 +170,19 @@ public class CommentService {
 	//대댓글 삭제
 	public void deleteReply(Long replyId, Long id) {
 
-		Comment reply = getCommentValidate(replyId);
+		Comment reply = getCommentValidate(replyId); //대댓글 조회
 
 		validateAuthor(reply, id);
 
 		reply.delete();
+	}
+
+	public Page<CommentResponse.ReplyList> getReplies(Long commentId, Pageable pageable) {
+
+		Comment comment = getCommentById(commentId);
+
+		Page<Comment> replies = commentRepository.findByParentAndDisabled(comment, false, pageable);
+
+		return replies.map(CommentResponse.ReplyList::from);
 	}
 }

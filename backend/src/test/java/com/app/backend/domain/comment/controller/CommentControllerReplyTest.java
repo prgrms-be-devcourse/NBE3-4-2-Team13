@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -43,6 +44,8 @@ public class CommentControllerReplyTest {
 	@Autowired
 	private ObjectMapper objectMapper;
 
+	private Member testMember;
+	private Post testPost;
 	private MemberDetails memberDetails;
 	private Comment parentComment;
 	private Comment testReply;
@@ -50,7 +53,7 @@ public class CommentControllerReplyTest {
 	@BeforeEach
 	void setUp() {
 		// 테스트용 멤버 생성
-		Member testMember = Member.builder()
+		testMember = Member.builder()
 			.username("testUser")
 			.password("password")
 			.nickname("테스터")
@@ -68,6 +71,7 @@ public class CommentControllerReplyTest {
                 .groupId(1L)
                 .memberId(testMember.getId())
                 .nickName("테스트 닉").build();
+
 		testPost = postRepository.save(testPost);
 
 		// 테스트용 댓글 생성
@@ -137,14 +141,19 @@ public class CommentControllerReplyTest {
 	}
 
 	@Test
-	@DisplayName("대댓글 작성 실패 (부모 댓글 없음)")
+	@DisplayName("대댓글 작성 성공 (부모 댓글이 삭제되어도 작성 가능)")
 	void createReply3() throws Exception {
+
+		parentComment.deactivate();
+		commentRepository.save(parentComment);
+
+		Assertions.assertThat(parentComment.getDisabled()).isTrue();
 
 		CommentCreateRequest request = new CommentCreateRequest("test");
 
 		ResultActions resultActions = mvc
 			.perform(
-				post("/api/v1/comment/0/reply")
+				post("/api/v1/comment/" + parentComment.getId() + "/reply")
 					.contentType(MediaType.APPLICATION_JSON)
 					.content(objectMapper.writeValueAsString(request))
 					.with(user(memberDetails))
@@ -154,10 +163,10 @@ public class CommentControllerReplyTest {
 		resultActions
 			.andExpect(handler().handlerType(CommentController.class))
 			.andExpect(handler().methodName("createReply"))
-			.andExpect(status().isNotFound())
-			.andExpect(jsonPath("$.isSuccess").value(false))
-			.andExpect(jsonPath("$.code").value("CM001"))
-			.andExpect(jsonPath("$.message").value("댓글을 찾을 수 없습니다"));
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.isSuccess").value(true))
+			.andExpect(jsonPath("$.code").value("201"))
+			.andExpect(jsonPath("$.data.content").value("test"));
 	}
 
 	@Test
@@ -232,6 +241,35 @@ public class CommentControllerReplyTest {
 	}
 
 	@Test
+	@DisplayName("대댓글 수정 성공(부모 댓글이 삭제되어도 수정 가능)")
+	void updateReply4() throws Exception {
+
+		parentComment.deactivate();
+		commentRepository.save(parentComment);
+
+		Assertions.assertThat(parentComment.getDisabled()).isTrue();
+
+		CommentCreateRequest request = new CommentCreateRequest("수정된 내용");
+
+		ResultActions resultActions = mvc
+			.perform(
+				patch("/api/v1/comment/" + testReply.getId() + "/reply")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(request))
+					.with(user(memberDetails))
+			)
+			.andDo(print());
+
+		resultActions
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.isSuccess").value(true))
+			.andExpect(jsonPath("$.code").value("200"))
+			.andExpect(jsonPath("$.message").exists())
+			.andExpect(jsonPath("$.data.content").value("수정된 내용"));
+	}
+
+
+	@Test
 	@DisplayName("대댓글 삭제 성공")
 	void deleteReply() throws Exception {
 
@@ -269,6 +307,158 @@ public class CommentControllerReplyTest {
 			.andExpect(jsonPath("$.isSuccess").value(false))
 			.andExpect(jsonPath("$.code").value("CM003"))
 			.andExpect(jsonPath("$.message").value("댓글에 대한 권한이 없습니다"));
+	}
+
+	@Test
+	@DisplayName("대댓글 삭제 성공(부모 댓글이 삭제되어도 삭제 가능)")
+	void deleteReply3() throws Exception {
+
+		parentComment.deactivate();
+		commentRepository.save(parentComment);
+
+		Assertions.assertThat(parentComment.getDisabled()).isTrue();
+
+		ResultActions resultActions = mvc
+			.perform(
+				delete("/api/v1/comment/" + testReply.getId() + "/reply")
+					.with(user(memberDetails))
+			)
+			.andDo(print());
+
+		resultActions
+			.andExpect(status().isNoContent())
+			.andExpect(jsonPath("$.isSuccess").value(true))
+			.andExpect(jsonPath("$.code").value("204"))
+			.andExpect(jsonPath("$.message").value("%d번 답글이 삭제되었습니다.".formatted(testReply.getId())));
+
+	}
+
+
+	@Test
+	@DisplayName("대댓글 페이징 조회 성공 (대댓글 여러개)")
+	void getReplies() throws Exception {
+
+		for (int i = 1; i <= 14; i++) {
+			Comment reply = Comment.builder()
+				.content("reply" + i)
+				.post(testPost)
+				.member(testMember)
+				.parent(parentComment)
+				.build();
+			reply = commentRepository.save(reply);
+			parentComment.addReply(reply);
+		}
+
+		ResultActions resultActions = mvc
+			.perform(
+				get("/api/v1/comment/" + parentComment.getId() + "/reply")
+					.param("page", "0")
+					.param("size", "10")
+					.param("sort", "id,desc")
+					.contentType(MediaType.APPLICATION_JSON)
+					.with(user(memberDetails))
+			)
+			.andDo(print());
+
+		resultActions
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.isSuccess").value(true))
+			.andExpect(jsonPath("$.code").value("200"))
+			.andExpect(jsonPath("$.message").exists())
+			.andExpect(jsonPath("$.data.content.length()").value(10))
+			.andExpect(jsonPath("$.data.totalElements").value(15))
+			.andExpect(jsonPath("$.data.totalPages").value(2))
+			.andExpect(jsonPath("$.data.hasNext").value(true))
+			.andExpect(jsonPath("$.data.isLast").value(false));
+
+		ResultActions resultActions2 = mvc
+			.perform(
+				get("/api/v1/comment/" + parentComment.getId() + "/reply")
+					.param("page", "1")
+					.param("size", "10")
+					.param("sort", "id,desc")
+					.contentType(MediaType.APPLICATION_JSON)
+					.with(user(memberDetails))
+
+			)
+			.andDo(print());
+
+		resultActions2
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.isSuccess").value(true))
+			.andExpect(jsonPath("$.code").value("200"))
+			.andExpect(jsonPath("$.message").exists())
+			.andExpect(jsonPath("$.data.content.length()").value(5))
+			.andExpect(jsonPath("$.data.totalElements").value(15))
+			.andExpect(jsonPath("$.data.totalPages").value(2))
+			.andExpect(jsonPath("$.data.hasNext").value(false))
+			.andExpect(jsonPath("$.data.isLast").value(true));
+	}
+
+	@Test
+	@DisplayName("대댓글 페이징 조회 성공 (댓글 삭제되어도 조회 가능)")
+	void getReplies2() throws Exception {
+
+		for (int i = 1; i <= 14; i++) {
+			Comment reply = Comment.builder()
+				.content("reply" + i)
+				.post(testPost)
+				.member(testMember)
+				.parent(parentComment)
+				.build();
+			reply = commentRepository.save(reply);
+			parentComment.addReply(reply);
+		}
+
+		parentComment.deactivate();
+		commentRepository.save(parentComment);
+
+		Assertions.assertThat(parentComment.getDisabled()).isTrue();
+
+		ResultActions resultActions = mvc
+			.perform(
+				get("/api/v1/comment/" + parentComment.getId() + "/reply")
+					.param("page", "0")
+					.param("size", "10")
+					.param("sort", "id,desc")
+					.contentType(MediaType.APPLICATION_JSON)
+					.with(user(memberDetails))
+			)
+			.andDo(print());
+
+		resultActions
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.isSuccess").value(true))
+			.andExpect(jsonPath("$.code").value("200"))
+			.andExpect(jsonPath("$.message").exists())
+			.andExpect(jsonPath("$.data.content.length()").value(10))
+			.andExpect(jsonPath("$.data.totalElements").value(15))
+			.andExpect(jsonPath("$.data.totalPages").value(2))
+			.andExpect(jsonPath("$.data.hasNext").value(true))
+			.andExpect(jsonPath("$.data.isLast").value(false));
+
+		ResultActions resultActions2 = mvc
+			.perform(
+				get("/api/v1/comment/" + parentComment.getId() + "/reply")
+					.param("page", "1")
+					.param("size", "10")
+					.param("sort", "id,desc")
+					.contentType(MediaType.APPLICATION_JSON)
+					.with(user(memberDetails))
+
+			)
+			.andDo(print());
+
+		resultActions2
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.isSuccess").value(true))
+			.andExpect(jsonPath("$.code").value("200"))
+			.andExpect(jsonPath("$.message").exists())
+			.andExpect(jsonPath("$.data.content.length()").value(5))
+			.andExpect(jsonPath("$.data.totalElements").value(15))
+			.andExpect(jsonPath("$.data.totalPages").value(2))
+			.andExpect(jsonPath("$.data.hasNext").value(false))
+			.andExpect(jsonPath("$.data.isLast").value(true));
 	}
 
 }

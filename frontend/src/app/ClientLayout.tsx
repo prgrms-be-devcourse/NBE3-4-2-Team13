@@ -1,7 +1,17 @@
 "use client";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import * as React from "react";
-import { Moon, Sun, Home, LogIn, LogOut, Settings, User, Users, MessageSquare } from "lucide-react";
+import {
+  Moon,
+  Sun,
+  Home,
+  LogIn,
+  LogOut,
+  Settings,
+  User,
+  Users,
+  MessageSquare,
+} from "lucide-react";
 import { useTheme } from "next-themes";
 import { LoginMemberContext, useLoginMember } from "@/stores/auth/LoginMember";
 import { Button } from "@/components/ui/button";
@@ -41,9 +51,46 @@ function ModeToggle() {
   );
 }
 
-export function ClientLayout({children,}: React.ComponentProps<typeof NextThemesProvider>) {
-  // 로그아웃 후 홈으로 이동하기 위해서 로드
+export function ClientLayout({
+  children,
+}: React.ComponentProps<typeof NextThemesProvider>) {
   const router = useRouter();
+  const INITIAL_SESSION_TIME = 30 * 60; // 30분
+  const [sessionTime, setSessionTime] = React.useState<number>(0);
+  const [tokenExpirationTime, setTokenExpirationTime] = React.useState<number>(0); // 토큰 만료 시간을 저장할 state
+
+  // formatTime 함수를 컴포넌트 내부로 이동
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+  };
+
+  // JWT 토큰에서 만료시간을 계산하는 함수
+  // const calculateRemainingTime = () => {
+  //   const token = localStorage.getItem("accessToken");
+  //   if (!token) return 0;
+
+  //   try {
+  //     // JWT의 payload 부분을 디코딩
+  //     const payload = JSON.parse(atob(token.split(".")[1]));
+  //     // exp는 초 단위의 유닉스 타임스탬프
+  //     const expirationTime = payload.exp; // 초 단위의 만료 시간
+  //     setTokenExpirationTime(expirationTime);  // 토큰의 만료 시간 저장
+  //     const currentTime = Math.floor(Date.now() / 1000);  // 현재 시간을 초 단위로 변환
+  //     const remainingTime = expirationTime - currentTime;
+
+  //     return remainingTime > 0 ? remainingTime : 0;
+  //   } catch (error) {
+  //     console.error("토큰 파싱 에러:", error);
+  //     return 0;
+  //   }
+  // };
+
+  // 시간 연장 함수 수정
+  const extendTime = () => {
+    setSessionTime(INITIAL_SESSION_TIME);
+  };
 
   // 훅을 통해서 로그인 한 회원의 정보(state)와 관련된 함수들을 얻는다.
   const {
@@ -67,25 +114,111 @@ export function ClientLayout({children,}: React.ComponentProps<typeof NextThemes
     setNoLoginMember,
   };
 
+  const logout = async () => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        setNoLoginMember();
+        return;
+      }
+      // 백엔드에 로그아웃 요청
+      const response = await fetch(
+        "http://localhost:8080/api/v1/members/logout",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          credentials: "include", // refreshToken이 쿠키에 있으므로 필요
+        }
+      );
+      if (!response.ok) {
+        throw new Error("로그아웃 실패");
+      }
+
+      // 프론트엔드 정리
+      localStorage.removeItem("accessToken");
+      document.cookie =
+        "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      removeLoginMember();
+      router.replace("/");
+    } catch (error) {
+      console.error("로그아웃 중 에러 발생:", error);
+      // 백엔드 에러가 발생하더라도 프론트엔드는 로그아웃 처리
+      localStorage.removeItem("accessToken");
+      document.cookie =
+        "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      removeLoginMember();
+      router.replace("/");
+    }
+  };
+
+  useEffect(() => {
+    // 로그인 상태일 때만 타이머 실행
+    let timer: NodeJS.Timeout;
+    if (isLogin && sessionTime > 0) {
+      timer = setInterval(() => {
+        setSessionTime((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            logout(); // 시간 종료시 자동 로그아웃
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    // 컴포넌트가 언마운트되거나 의존성이 변경될 때 타이머 정리
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [isLogin, sessionTime, logout]); // logout 함수도 의존성에 추가
+
+  useEffect(() => {
+    if (isLogin) {
+      setSessionTime(INITIAL_SESSION_TIME);
+    }
+  }, [isLogin]); // 로그인 상태가 변경될 때만 실행
+
   useEffect(() => {
     // 추후 이 부분은 fetch(GET http://localhost:8080/api/v1/members/me) 로 대체될 예정이다.
     // 현재는 일단은 임시로 관리자 회원으로 로그인 했다고 가정하기 위해서 아래와 같이 선언
     // 실제로 나중에 fetch로 변경될 때도 fetch가 완료되는데 걸리는 시간이 걸린다.
     // 그 상황을 실감나게 흉내내기 위해서 setTimeout을 사용하였다.
+    // 로그인 상태일 때만 타이머 실행
+    let timer: NodeJS.Timeout;
+    if (isLogin && sessionTime > 0) {
+      timer = setInterval(() => {
+        setSessionTime((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            logout(); // 시간 종료시 자동 로그아웃
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
     const fetchLoginMember = async () => {
       try {
-        const token = localStorage.getItem('accessToken');
+        const token = localStorage.getItem("accessToken");
 
-        const response = await fetch("http://localhost:8080/api/v1/members/info", {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          credentials: 'include'
-        });
+        const response = await fetch(
+          "http://localhost:8080/api/v1/members/info",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+          }
+        );
         if (response.ok) {
           const responseData = await response.json();
-          
+
           if (responseData.isSuccess) {
             const memberData = responseData.data;
             setLoginMember({
@@ -96,7 +229,9 @@ export function ClientLayout({children,}: React.ComponentProps<typeof NextThemes
               createdAt: memberData.createdAt,
               modifiedAt: memberData.modifiedAt,
               provider: memberData.provider,
-              authorities: memberData.authorities.map((auth: any) => auth.authority), // authorities 배열에서 authority 값만 추출
+              authorities: memberData.authorities.map(
+                (auth: any) => auth.authority
+              ), // authorities 배열에서 authority 값만 추출
             });
           } else {
             setNoLoginMember();
@@ -110,8 +245,11 @@ export function ClientLayout({children,}: React.ComponentProps<typeof NextThemes
       }
     };
     fetchLoginMember();
-  }, []);
-
+    // 컴포넌트가 언마운트되거나 의존성이 변경될 때 타이머 정리
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [isLogin]);
 
   // isLoginMemberPending 의 시작상태는 true 이다.
   // 해당값이 true 라는 것은 아직 로그인 상태인지 아닌지 판별되기 전이라는 의미이다.
@@ -123,44 +261,6 @@ export function ClientLayout({children,}: React.ComponentProps<typeof NextThemes
       </div>
     );
   }
-
-  const logout = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      if (!token) {
-        setNoLoginMember();
-        return;
-      }
-      // 백엔드에 로그아웃 요청
-      const response = await fetch('http://localhost:8080/api/v1/members/logout', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include'  // refreshToken이 쿠키에 있으므로 필요
-      });
-      if (!response.ok) {
-        throw new Error('로그아웃 실패');
-      }
-
-      // 프론트엔드 정리
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('nickname');
-      document.cookie = 'refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      removeLoginMember();
-      router.replace("/");
-      
-    } catch (error) {
-      console.error('로그아웃 중 에러 발생:', error);
-      // 백엔드 에러가 발생하더라도 프론트엔드는 로그아웃 처리
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('nickname');
-      document.cookie = 'refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      removeLoginMember();
-      router.replace("/");
-    }
-  };
 
   return (
     <NextThemesProvider
@@ -196,6 +296,21 @@ export function ClientLayout({children,}: React.ComponentProps<typeof NextThemes
           </div>
           <div className="flex-grow"></div>
           <div className="flex items-center gap-2">
+            {isLogin && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  세션 만료까지: {formatTime(sessionTime)}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={extendTime}
+                  className="text-xs"
+                >
+                  시간연장
+                </Button>
+              </div>
+            )}
             {isLogin && (
               <Button variant="link" asChild>
                 <Link href="/member/info">

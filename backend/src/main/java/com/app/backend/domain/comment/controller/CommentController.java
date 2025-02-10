@@ -20,6 +20,7 @@ import com.app.backend.domain.comment.dto.request.CommentCreateRequest;
 import com.app.backend.domain.comment.dto.response.CommentResponse;
 import com.app.backend.domain.comment.service.CommentService;
 import com.app.backend.domain.member.entity.MemberDetails;
+import com.app.backend.global.annotation.CustomPageJsonSerializer;
 import com.app.backend.global.dto.response.ApiResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -81,6 +82,14 @@ public class CommentController {
 
 	//게시물에 대한 댓글 조회 페이징
 	@GetMapping("/{id}")
+	@CustomPageJsonSerializer(
+		empty = false,
+		numberOfElements = false,
+		size = false,
+		number = false,
+		hasPrevious = false,
+		isFirst = false
+	)
 	public ApiResponse<Page<CommentResponse.CommentList>> getComments(
 		@PathVariable(name = "id") Long postId,
 		@PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
@@ -143,6 +152,31 @@ public class CommentController {
 			true,
 			HttpStatus.NO_CONTENT,
 			"%d번 답글이 삭제되었습니다.".formatted(replyId)
+		);
+	}
+
+	//대댓글 조회
+	@GetMapping("/{id}/reply")
+	@CustomPageJsonSerializer(
+		empty = false,
+		hasContent = false,
+		numberOfElements = false,
+		size = false,
+		number = false,
+		hasPrevious = false,
+		isFirst = false
+	)
+	public ApiResponse<Page<CommentResponse.ReplyList>> getReplies(
+		@PathVariable(name = "id") Long commentId,
+		@PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+	) {
+		Page<CommentResponse.ReplyList> response = commentService.getReplies(commentId, pageable);
+
+		return ApiResponse.of(
+			true,
+			HttpStatus.OK,
+			"답글이 조회되었습니다.",
+			response
 		);
 	}
 }
