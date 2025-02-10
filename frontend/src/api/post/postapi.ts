@@ -9,7 +9,7 @@ export const getPost = async (postId: number, token: string): Promise<Post> => {
     });
     return response.data.data;
   } catch (error: any) {
-    throw new Error("게시글을 불러오는데 실패했습니다");
+    throw error.response.data.code;
   }
 };
 
@@ -52,7 +52,7 @@ export const updatePost = async (
 
     return response.data;
   } catch (error: any) {
-    throw new Error("게시글을 수정하는데 실패했습니다");
+    throw error.response.data.code;
   }
 };
 
