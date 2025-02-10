@@ -71,9 +71,12 @@ public class DataInit {
             categoryRepository.save(category);
         }
 
-        int          i         = 1;
-        List<String> addresses = List.of("서울 서초구 서초동", "서울 서초구 잠원동", "서울 서초구 반포동", "서울 서초구 방배동");
-        while (i <= 30) {
+        int i = 1;
+        List<String> addresses = List.of("서울 서초구 서초동", "서울 서초구 잠원동", "서울 서초구 반포동", "서울 서초구 방배동",
+                                         "경기 성남시 분당구", "경기 수원시 권선구", "경기 안양시 만안구", "인천 남동구 구월동",
+                                         "대전 중구 은행동", "대구 수성구 두산동", "광주 동구 용연동", "부산 수영구 광안동",
+                                         "강원특별자치도 강릉시 송정동", "제주특별자치도 서귀포시 성산읍");
+        while (i <= 100) {
             String   name     = categories.get(random.nextInt(categories.size()));
             Category category = categoryRepository.findByNameAndDisabled(name, false).get();
 
