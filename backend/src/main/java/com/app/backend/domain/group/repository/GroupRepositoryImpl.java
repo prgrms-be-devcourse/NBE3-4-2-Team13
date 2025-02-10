@@ -208,7 +208,6 @@ public class GroupRepositoryImpl implements GroupRepositoryCustom {
                                                .orderBy(getSortCondition(pageable, group))
                                                .offset(pageable.getOffset())
                                                .limit(pageable.getPageSize());
-        System.out.println("query.toString() = " + query.toString());
         JPAQuery<Long> count = jpaQueryFactory.select(group.count())
                                               .from(group)
                                               .where(categoryName != null && !categoryName.isBlank()
