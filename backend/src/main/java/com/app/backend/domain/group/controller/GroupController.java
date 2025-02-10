@@ -66,10 +66,10 @@ public class GroupController {
                                                           @Nullable @AuthenticationPrincipal final UserDetails userDetails) {
         GroupResponse.Detail responseDto = null;
 
-        if (userDetails == null)
-            responseDto = groupService.getGroup(groupId);
-        else
+        if (userDetails != null && groupMembershipService.isMember(groupId, ((MemberDetails) userDetails).getId()))
             responseDto = groupService.getGroup(groupId, ((MemberDetails) userDetails).getId());
+        else
+            responseDto = groupService.getGroup(groupId);
 
         return ApiResponse.of(true, HttpStatus.OK, GroupMessageConstant.READ_GROUP_SUCCESS, responseDto);
     }
