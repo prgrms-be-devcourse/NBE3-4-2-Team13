@@ -154,6 +154,7 @@ public class CommentService {
 	}
 
 	//대댓글 수정
+	@Transactional
 	public CommentResponse.ReplyDto updateReply(Long replyId, Long id, CommentCreateRequest req) {
 
 		Comment reply = getCommentValidate(replyId); //대댓글 조회
@@ -168,6 +169,7 @@ public class CommentService {
 	}
 
 	//대댓글 삭제
+	@Transactional
 	public void deleteReply(Long replyId, Long id) {
 
 		Comment reply = getCommentValidate(replyId); //대댓글 조회
