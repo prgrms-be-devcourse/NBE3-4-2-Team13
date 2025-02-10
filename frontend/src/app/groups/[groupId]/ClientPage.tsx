@@ -20,6 +20,7 @@ interface GroupDetail {
   createdAt: string;
   isMember: boolean;
   isAdmin: boolean;
+  groupLeaders: string[];
   latitude: string;
   longitude: string;
 }
@@ -205,10 +206,15 @@ export default function ClientPage({ groupId }: Props) {
       <div className='bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8'>
         <div className='flex justify-between items-center mb-6'>
           <div>
-            <span className='bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 px-3 py-1 rounded-full text-sm font-medium'>
-              {group.categoryName}
-            </span>
-            <h1 className='text-3xl font-bold text-gray-900 dark:text-white mt-2'>{group.name}</h1>
+            <h1 className='text-3xl font-bold text-gray-900 dark:text-white mb-2'>{group.name}</h1>
+            <div className='flex items-center gap-2'>
+              <span className='bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 px-3 py-1 rounded-full text-sm font-medium'>
+                {group.categoryName}
+              </span>
+              <span className='text-gray-600 dark:text-gray-400 text-sm'>
+                생성일: {new Date(group.createdAt).toLocaleDateString()}
+              </span>
+            </div>
           </div>
           <div className='flex gap-2'>
             {group.isMember && (
@@ -248,7 +254,17 @@ export default function ClientPage({ groupId }: Props) {
           </div>
         </div>
 
-        <div className='space-y-4 text-gray-600 dark:text-gray-300'>
+        <div className='space-y-4'>
+          <div className='flex items-center gap-2 text-gray-700 dark:text-gray-300'>
+            <span className='font-medium'>관리자:</span>
+            <div className='flex flex-wrap gap-2'>
+              {group.groupLeaders.map((leader, index) => (
+                <span key={index} className='bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-md text-sm'>
+                  {leader}
+                </span>
+              ))}
+            </div>
+          </div>
           <p>
             <span className='font-semibold'>위치:</span> {group.province} {group.city} {group.town}
           </p>
@@ -266,9 +282,6 @@ export default function ClientPage({ groupId }: Props) {
           </p>
           <p>
             <span className='font-semibold'>멤버:</span> {group.currentMemberCount}/{group.maxRecruitCount}
-          </p>
-          <p>
-            <span className='font-semibold'>생성일:</span> {new Date(group.createdAt).toLocaleDateString()}
           </p>
           <div>
             <span className='font-semibold'>소개:</span>

@@ -18,6 +18,7 @@ interface GroupListInfo {
   maxRecruitCount: number;
   currentMemberCount: number;
   createdAt: string;
+  groupLeaders: string[];
 }
 
 interface SearchParams {
@@ -371,7 +372,8 @@ export default function ClientPage() {
               </span>
             </div>
 
-            <h3 className='text-xl font-bold text-gray-900 dark:text-white mb-4'>{group.name}</h3>
+            <h3 className='text-xl font-bold text-gray-900 dark:text-white mb-2'>{group.name}</h3>
+            <div className='text-sm text-gray-500 dark:text-gray-400 mb-4'>관리자: {group.groupLeaders.join(', ')}</div>
 
             <div className='flex justify-between items-center'>
               <div className='text-gray-600 dark:text-gray-400'>
