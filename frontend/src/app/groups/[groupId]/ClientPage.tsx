@@ -168,33 +168,6 @@ export default function ClientPage({ groupId }: Props) {
           </div>
         </div>
       </div>
-
-      {/* 게시판 섹션 (미구현) */}
-      <div className='bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6'>
-        <h2 className='text-2xl font-bold text-gray-900 dark:text-white mb-6'>게시판</h2>
-        <div className='mb-4'>
-          <form className='flex gap-4'>
-            <input
-              type='text'
-              placeholder='게시글 검색'
-              className='flex-1 px-4 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white'
-            />
-            <button
-              type='submit'
-              className='px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors'
-            >
-              검색
-            </button>
-          </form>
-        </div>
-        <div className='space-y-4'>
-          {/* 게시글 목록 더미 데이터 */}
-          <div className='p-4 border dark:border-gray-700 rounded-lg'>
-            <h3 className='text-lg font-semibold text-gray-900 dark:text-white'>게시판 기능 준비중</h3>
-            <p className='text-gray-600 dark:text-gray-400'>추후 업데이트 예정입니다.</p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
