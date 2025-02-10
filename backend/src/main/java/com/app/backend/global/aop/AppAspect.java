@@ -36,14 +36,13 @@ public class AppAspect {
 
             Object result = joinPoint.proceed();
 
-            if (result instanceof ApiResponse<?>) {
-                ApiResponse<?> apiResponse = (ApiResponse<?>) result;
-                Object         body        = apiResponse.getData();
+            if (result instanceof ApiResponse<?> apiResponse) {
+                Object body = apiResponse.getData();
 
                 if (body instanceof Page<?>) {
                     String key = generateKey(annotation);
                     ObjectMapper objectMapper = objectMapperMap.computeIfAbsent(key, newKey -> {
-                        log.info("새로운 ObjectMapper 생성: " + newKey);
+                        log.info("새로운 ObjectMapper 생성: {}", newKey);
                         ObjectMapper newObjectMapper = new ObjectMapper();
                         newObjectMapper.registerModules(new JavaTimeModule(), new CustomPageModule(annotation));
                         newObjectMapper.enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
