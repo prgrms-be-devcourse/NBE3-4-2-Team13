@@ -5,11 +5,25 @@ import { Comment } from "@/types/Comment";
 import {
   getReplies,
   createReply,
+  updateReply,
+  deleteReply,
   updateComment,
   deleteComment,
 } from "@/api/comment/commentApi";
 import { LoginMemberContext } from "@/stores/auth/LoginMember";
-import { useRouter } from "next/navigation";
+
+// 날짜 포맷
+function formatDateFromArray(dateData: any): string {
+  if (dateData.length < 6) return "";
+  const [year, month, day, hour, minute, second] = dateData;
+  // month, day, hour, minute, second를 두 자리 문자열로 변환
+  const mm = String(month).padStart(2, "0");
+  const dd = String(day).padStart(2, "0");
+  const hh = String(hour).padStart(2, "0");
+  const min = String(minute).padStart(2, "0");
+  const ss = String(second).padStart(2, "0");
+  return `${year}-${mm}-${dd} ${hh}:${min}:${ss}`;
+}
 
 interface CommentItemProps {
   comment: Comment;
@@ -24,7 +38,6 @@ export default function CommentItem({
   onCommentUpdated,
   onCommentDeleted,
 }: CommentItemProps) {
-  const router = useRouter();
   const token = localStorage.getItem("accessToken") || "";
   const { loginMember } = use(LoginMemberContext);
 
@@ -35,10 +48,41 @@ export default function CommentItem({
   const [showReplies, setShowReplies] = useState(false);
   const [replies, setReplies] = useState<Comment[]>([]);
   const [loadingReplies, setLoadingReplies] = useState(false);
+  const [replyEditMode, setReplyEditMode] = useState<{
+    [key: number]: boolean;
+  }>({});
+  const [replyEditedContent, setReplyEditedContent] = useState<{
+    [key: number]: string;
+  }>({});
 
-  // 답글 불러오기
+  // 댓글 수정 (일반 댓글)
+  const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editedContent.trim()) return;
+    try {
+      const updated = await updateComment(comment.id, editedContent, token);
+      setEditMode(false);
+      if (onCommentUpdated) onCommentUpdated(updated.data || updated);
+    } catch (error) {
+      console.error("댓글 수정 오류:", error);
+    }
+  };
+
+  // 댓글 삭제
+  const handleDelete = async () => {
+    if (confirm("정말 댓글을 삭제하시겠습니까?")) {
+      try {
+        await deleteComment(comment.id, token);
+        if (onCommentDeleted) onCommentDeleted(comment.id);
+      } catch (error) {
+        console.error("댓글 삭제 오류:", error);
+      }
+    }
+  };
+
+  // 답글 불러오기 (토글)
   const handleToggleReplies = async () => {
-    if (!showReplies && replies.length === 0 && comment.replyCount > 0) {
+    if (!showReplies) {
       setLoadingReplies(true);
       try {
         const data = await getReplies(comment.id, token);
@@ -49,10 +93,10 @@ export default function CommentItem({
         setLoadingReplies(false);
       }
     }
-    setShowReplies(!showReplies);
+    setShowReplies((prev) => !prev);
   };
 
-  // 답글 작성 폼 제출
+  // 답글 작성 (새로운 답글)
   const handleReplySubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!replyContent.trim()) return;
@@ -69,31 +113,33 @@ export default function CommentItem({
     }
   };
 
-  // 댓글 수정 제출 처리
-  const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!editedContent.trim()) return;
+  // 대댓글 수정 (인라인 수정)
+  const handleReplyEditSubmit = async (replyId: number) => {
+    const newContent = replyEditedContent[replyId];
+    if (!newContent || !newContent.trim()) return;
     try {
-      const updated = await updateComment(comment.id, editedContent, token);
-      setEditMode(false);
-      if (onCommentUpdated) {
-        onCommentUpdated(updated.data || updated);
-      }
+      const updated = await updateReply(replyId, newContent, token);
+      setReplies((prevReplies) =>
+        prevReplies.map((r) =>
+          r.id === replyId ? { ...r, content: updated.content } : r
+        )
+      );
+      setReplyEditMode((prev) => ({ ...prev, [replyId]: false }));
     } catch (error) {
-      console.error("댓글 수정 오류:", error);
+      console.error("답글 수정 오류:", error);
     }
   };
 
-  // 댓글 삭제 처리
-  const handleDelete = async () => {
-    if (confirm("정말 댓글을 삭제하시겠습니까?")) {
+  // 대댓글 삭제
+  const handleReplyDelete = async (replyId: number) => {
+    if (confirm("정말 답글을 삭제하시겠습니까?")) {
       try {
-        await deleteComment(comment.id, token);
-        if (onCommentDeleted) {
-          onCommentDeleted(comment.id);
-        }
+        await deleteReply(replyId, token);
+        setReplies((prevReplies) =>
+          prevReplies.filter((r) => r.id !== replyId)
+        );
       } catch (error) {
-        console.error("댓글 삭제 오류:", error);
+        console.error("답글 삭제 오류:", error);
       }
     }
   };
@@ -109,19 +155,19 @@ export default function CommentItem({
                 type="text"
                 value={editedContent}
                 onChange={(e) => setEditedContent(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none"
               />
               <div className="flex justify-end space-x-3">
                 <button
                   type="submit"
-                  className="px-4 py-1 text-sm font-medium text-blue-600 border border-blue-600 rounded hover:bg-blue-600 hover:text-white transition"
+                  className="text-sm border px-3 py-1 rounded hover:bg-gray-100"
                 >
                   저장
                 </button>
                 <button
                   type="button"
                   onClick={() => setEditMode(false)}
-                  className="px-4 py-1 text-sm font-medium text-gray-600 border border-gray-600 rounded hover:bg-gray-600 hover:text-white transition"
+                  className="text-sm border px-3 py-1 rounded hover:bg-gray-100"
                 >
                   취소
                 </button>
@@ -131,82 +177,141 @@ export default function CommentItem({
             <p className="text-gray-800 text-sm">{comment.content}</p>
           )}
           <div className="text-gray-500 text-xs">
-            작성자: {comment.nickname} | 작성일: {comment.createdAt}
+            작성자: {comment.nickname} | 작성일:{" "}
+            {formatDateFromArray(comment.createdAt)}
           </div>
         </div>
+
         {/* 댓글 버튼 */}
         <div className="flex flex-col items-end space-y-2">
           {loginMember.id === comment.memberId && !editMode && (
             <div className="space-x-2">
               <button
                 onClick={() => setEditMode(true)}
-                className="text-gray-700 text-xs border border-gray-300 rounded px-2 py-1 hover:bg-gray-100 transition"
+                className="text-xs border px-2 py-1 rounded hover:bg-gray-100"
               >
                 수정
               </button>
               <button
                 onClick={handleDelete}
-                className="text-gray-700 text-xs border border-gray-300 rounded px-2 py-1 hover:bg-gray-100 transition"
+                className="text-xs border px-2 py-1 rounded hover:bg-gray-100"
               >
                 삭제
               </button>
             </div>
           )}
-          <div className="items-end space-x-2">
-            <button
-              onClick={() => setShowReplyForm((prev) => !prev)}
-              className="text-gray-700 text-xs border border-gray-300 rounded px-2 py-1 hover:bg-gray-100 transition"
-            >
-              답글 작성
-            </button>
-            {comment.replyCount > 0 && (
-              <button
-                onClick={handleToggleReplies}
-                className="text-gray-700 text-xs border border-gray-300 rounded px-2 py-1 hover:bg-gray-100 transition"
-              >
-                {showReplies
-                  ? "답글 숨기기"
-                  : `답글 (${comment.replyCount})`}
-              </button>
-            )}
-          </div>
+          <button
+            onClick={handleToggleReplies}
+            className="text-xs border px-2 py-1 rounded hover:bg-gray-100"
+          >
+            {showReplies ? "답글 닫기" : `답글 보기 (${comment.replyCount})`}
+          </button>
         </div>
       </div>
-      {/* 답글 작성 폼 */}
-      {showReplyForm && (
-        <form onSubmit={handleReplySubmit} className="mt-2 flex justify-end">
-          <input
-            type="text"
-            placeholder="답글 입력..."
-            value={replyContent}
-            onChange={(e) => setReplyContent(e.target.value)}
-            className="w-3/4 px-2 py-1 border rounded text-xs focus:outline-none focus:ring focus:ring-blue-300"
-          />
-          <button
-            type="submit"
-            className="ml-2 px-2 py-1 border border-gray-300 text-gray-700 rounded hover:bg-gray-100 transition text-xs"
-          >
-            등록
-          </button>
-        </form>
-      )}
-      {/* 답글 목록 */}
+
+      {/* 답글 작성 폼 (답글 보기 토글 시 함께 표시) */}
       {showReplies && (
         <div className="mt-2 ml-4 space-y-2">
+          {/* 답글 목록 */}
           {loadingReplies ? (
             <p className="text-gray-500 text-xs">로딩 중...</p>
           ) : replies.length > 0 ? (
             replies.map((reply) => (
-              <div key={reply.id} className="border-b pb-1">
-                <p className="text-gray-800 text-xs">{reply.content}</p>
-                <div className="text-gray-500 text-[10px]">
-                  작성자: {reply.nickname} | 작성일: {reply.createdAt}
+              <div
+                key={reply.id}
+                className="border-b pb-1 flex justify-between"
+              >
+                <div className="w-3/4">
+                  {replyEditMode[reply.id] ? (
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="text"
+                        value={replyEditedContent[reply.id] || ""}
+                        onChange={(e) =>
+                          setReplyEditedContent((prev) => ({
+                            ...prev,
+                            [reply.id]: e.target.value,
+                          }))
+                        }
+                        className="flex-1 px-2 py-1 border rounded text-xs" // w-full 대신 flex-1 사용
+                      />
+                      <button
+                        onClick={() => handleReplyEditSubmit(reply.id)}
+                        className="text-xs border px-2 py-1 rounded hover:bg-gray-100"
+                      >
+                        저장
+                      </button>
+                      <button
+                        onClick={() =>
+                          setReplyEditMode((prev) => ({
+                            ...prev,
+                            [reply.id]: false,
+                          }))
+                        }
+                        className="text-xs border px-2 py-1 rounded hover:bg-gray-100"
+                      >
+                        취소
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-gray-800 text-xs">{reply.content}</p>
+                      <div className="text-gray-500 text-[10px]">
+                        작성자: {reply.nickname} | 작성일:{" "}
+                        {formatDateFromArray(reply.createdAt)}
+                      </div>
+                    </>
+                  )}
                 </div>
+                {loginMember.id === reply.memberId &&
+                  !replyEditMode[reply.id] && (
+                    <div className="space-x-1">
+                      <button
+                        onClick={() => {
+                          setReplyEditMode((prev) => ({
+                            ...prev,
+                            [reply.id]: true,
+                          }));
+                          setReplyEditedContent((prev) => ({
+                            ...prev,
+                            [reply.id]: reply.content,
+                          }));
+                        }}
+                        className="text-xs border px-2 py-1 rounded hover:bg-gray-100"
+                      >
+                        수정
+                      </button>
+                      <button
+                        onClick={() => handleReplyDelete(reply.id)}
+                        className="text-xs border px-2 py-1 rounded hover:bg-gray-100"
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  )}
               </div>
             ))
           ) : (
             <p className="text-gray-500 text-xs">답글이 없습니다.</p>
           )}
+          <form
+            onSubmit={handleReplySubmit}
+            className="flex items-center space-x-2"
+          >
+            <input
+              type="text"
+              value={replyContent}
+              onChange={(e) => setReplyContent(e.target.value)}
+              placeholder="답글 입력..."
+              className="flex-1 px-2 py-1 border rounded text-xs" // w-full 대신 flex-1 사용
+            />
+            <button
+              type="submit"
+              className="text-xs border px-2 py-1 rounded hover:bg-gray-100"
+            >
+              등록
+            </button>
+          </form>
         </div>
       )}
     </div>
