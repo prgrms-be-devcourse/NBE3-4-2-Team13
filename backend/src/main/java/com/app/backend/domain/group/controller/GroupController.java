@@ -50,14 +50,6 @@ public class GroupController {
     public ApiResponse<Void> createGroup(@RequestBody @Valid final GroupRequest.Create requestDto,
                                          BindingResult bindingResult,
                                          @AuthenticationPrincipal final UserDetails userDetails) {
-        System.out.println("requestDto = " + requestDto);
-        System.out.println("requestDto.getName() = " + requestDto.getName());
-        System.out.println("requestDto.getProvince() = " + requestDto.getProvince());
-        System.out.println("requestDto.getCity() = " + requestDto.getCity());
-        System.out.println("requestDto.getTown() = " + requestDto.getTown());
-        System.out.println("requestDto.getMaxRecruitCount() = " + requestDto.getMaxRecruitCount());
-        System.out.println("requestDto.getDescription() = " + requestDto.getDescription());
-        System.out.println("requestDto.getCategoryName() = " + requestDto.getCategoryName());
         if (bindingResult.hasErrors())
             throw new GroupException(GlobalErrorCode.INVALID_INPUT_VALUE);
 
