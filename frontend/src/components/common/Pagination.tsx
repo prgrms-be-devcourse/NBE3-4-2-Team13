@@ -1,10 +1,20 @@
 interface PaginationProps {
   currentPage: number;
   totalPages: number;
+  totalElements?: number; // 전체 아이템 수
+  hasNext?: boolean; // 다음 페이지 존재 여부
+  hasPrevious?: boolean; // 이전 페이지 존재 여부
   onPageChange: (page: number) => void;
 }
 
-export default function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
+export default function Pagination({
+  currentPage,
+  totalPages,
+  totalElements,
+  hasNext = currentPage < totalPages - 1,
+  hasPrevious = currentPage > 0,
+  onPageChange,
+}: PaginationProps) {
   const getPageNumbers = () => {
     const pageNumbers = [];
     let startPage = Math.max(0, Math.min(currentPage - 4, totalPages - 10));
@@ -28,15 +38,11 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
 
   return (
     <div className='flex justify-center items-center space-x-1'>
-      <button onClick={() => onPageChange(0)} disabled={currentPage === 0} className={buttonBaseClass}>
+      <button onClick={() => onPageChange(0)} disabled={!hasPrevious} className={buttonBaseClass}>
         ≪
       </button>
 
-      <button
-        onClick={() => onPageChange(Math.max(0, currentPage - 1))}
-        disabled={currentPage === 0}
-        className={buttonBaseClass}
-      >
+      <button onClick={() => onPageChange(currentPage - 1)} disabled={!hasPrevious} className={buttonBaseClass}>
         ＜
       </button>
 
@@ -50,21 +56,17 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
         </button>
       ))}
 
-      <button
-        onClick={() => onPageChange(Math.min(totalPages - 1, currentPage + 1))}
-        disabled={currentPage === totalPages - 1}
-        className={buttonBaseClass}
-      >
+      <button onClick={() => onPageChange(currentPage + 1)} disabled={!hasNext} className={buttonBaseClass}>
         ＞
       </button>
 
-      <button
-        onClick={() => onPageChange(totalPages - 1)}
-        disabled={currentPage === totalPages - 1}
-        className={buttonBaseClass}
-      >
+      <button onClick={() => onPageChange(totalPages - 1)} disabled={!hasNext} className={buttonBaseClass}>
         ≫
       </button>
+
+      {totalElements !== undefined && (
+        <span className='ml-4 text-sm text-gray-600 dark:text-gray-400'>총 {totalElements}개</span>
+      )}
     </div>
   );
 }

@@ -27,6 +27,23 @@ interface SearchParams {
   keyword: string;
 }
 
+interface PageResponse<T> {
+  content: T[];
+  totalPages: number;
+  totalElements: number;
+  numberOfElements: number;
+  number: number;
+  hasPrevious: boolean;
+  hasNext: boolean;
+}
+
+interface ApiResponse<T> {
+  isSuccess: boolean;
+  code: string;
+  message: string;
+  data: PageResponse<T>;
+}
+
 export default function ClientPage() {
   const router = useRouter();
   const [groups, setGroups] = useState<GroupListInfo[]>([]);
@@ -48,6 +65,9 @@ export default function ClientPage() {
   }>({});
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasNext, setHasNext] = useState(false);
+  const [hasPrevious, setHasPrevious] = useState(false);
+  const [totalElements, setTotalElements] = useState(0);
 
   useEffect(() => {
     fetchGroups();
@@ -73,10 +93,15 @@ export default function ClientPage() {
         },
       });
 
-      const data = await response.json();
+      const data: ApiResponse<GroupListInfo> = await response.json();
       if (data.isSuccess) {
-        setGroups(data.data.content);
-        setTotalPages(data.data.totalPages);
+        const pageData = data.data;
+        setGroups(pageData.content);
+        setTotalPages(pageData.totalPages);
+        setCurrentPage(pageData.number);
+        setHasNext(pageData.hasNext);
+        setHasPrevious(pageData.hasPrevious);
+        setTotalElements(pageData.totalElements);
       }
     } catch (error) {
       console.error('Failed to fetch groups:', error);
@@ -299,7 +324,14 @@ export default function ClientPage() {
 
       {/* 페이지네이션 */}
       <div className='mt-8'>
-        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          hasNext={hasNext}
+          hasPrevious={hasPrevious}
+          totalElements={totalElements}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {/* 주소 검색 모달 */}
