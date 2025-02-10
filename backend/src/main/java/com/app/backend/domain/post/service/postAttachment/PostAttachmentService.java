@@ -42,9 +42,7 @@ public class PostAttachmentService {
 
         Post post = getPostEntity(file.getPostId());
 
-        GroupMembership membership = getMemberShipEntity(post.getGroupId(), memberId);
-
-        if (!(post.getPostStatus().equals(PostStatus.PUBLIC) || membership.getStatus().equals(MembershipStatus.APPROVED))) {
+        if (!post.getPostStatus().equals(PostStatus.PUBLIC) && !getMemberShipEntity(post.getGroupId(), memberId).getStatus().equals(MembershipStatus.APPROVED)) {
             throw new GroupMembershipException(GroupMembershipErrorCode.GROUP_MEMBERSHIP_NOT_FOUND);
         }
 

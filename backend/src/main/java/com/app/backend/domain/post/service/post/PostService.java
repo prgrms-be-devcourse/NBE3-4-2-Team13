@@ -57,9 +57,8 @@ public class PostService {
     public PostRespDto.GetPostDto getPost(final Long postId, final Long memberId) {
         String redisKey = "post:" + postId;
         Post post = getPostEntity(postId);
-        GroupMembership membership = getMemberShipEntity(post.getGroupId(), memberId);
 
-        if (!post.getPostStatus().equals(PostStatus.PUBLIC) && !membership.getStatus().equals(MembershipStatus.APPROVED)) {
+        if (!post.getPostStatus().equals(PostStatus.PUBLIC) && !getMemberShipEntity(post.getGroupId(), memberId).getStatus().equals(MembershipStatus.APPROVED)) {
             throw new PostException(PostErrorCode.POST_UNAUTHORIZATION);
         }
 
