@@ -5,6 +5,7 @@ import com.app.backend.domain.group.entity.QGroup;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.validation.constraints.NotNull;
@@ -153,10 +154,10 @@ public class GroupRepositoryImpl implements GroupRepositoryCustom {
         return jpaQueryFactory.selectFrom(group)
                               .where(categoryName != null && !categoryName.isBlank()
                                      ? group.category.name.eq(categoryName)
-                                     : null,
+                                     : Expressions.TRUE,
                                      name != null && !name.isBlank()
                                      ? group.name.contains(name)
-                                     : null,
+                                     : Expressions.TRUE,
                                      getRegionCondition(province, city, town, group),
                                      group.disabled.eq(disabled))
                               .fetch();
@@ -185,24 +186,37 @@ public class GroupRepositoryImpl implements GroupRepositoryCustom {
         List<Group> content = jpaQueryFactory.selectFrom(group)
                                              .where(categoryName != null && !categoryName.isBlank()
                                                     ? group.category.name.eq(categoryName)
-                                                    : null,
+                                                    : Expressions.TRUE,
                                                     name != null && !name.isBlank()
                                                     ? group.name.contains(name)
-                                                    : null,
+                                                    : Expressions.TRUE,
                                                     getRegionCondition(province, city, town, group),
                                                     group.disabled.eq(disabled))
                                              .orderBy(getSortCondition(pageable, group))
                                              .offset(pageable.getOffset())
                                              .limit(pageable.getPageSize())
                                              .fetch();
+        JPAQuery<Group> query = jpaQueryFactory.selectFrom(group)
+                                               .where(categoryName != null && !categoryName.isBlank()
+                                                      ? group.category.name.eq(categoryName)
+                                                      : Expressions.TRUE,
+                                                      name != null && !name.isBlank()
+                                                      ? group.name.contains(name)
+                                                      : Expressions.TRUE,
+                                                      getRegionCondition(province, city, town, group),
+                                                      group.disabled.eq(disabled))
+                                               .orderBy(getSortCondition(pageable, group))
+                                               .offset(pageable.getOffset())
+                                               .limit(pageable.getPageSize());
+        System.out.println("query.toString() = " + query.toString());
         JPAQuery<Long> count = jpaQueryFactory.select(group.count())
                                               .from(group)
                                               .where(categoryName != null && !categoryName.isBlank()
                                                      ? group.category.name.eq(categoryName)
-                                                     : null,
+                                                     : Expressions.TRUE,
                                                      name != null && !name.isBlank()
                                                      ? group.name.contains(name)
-                                                     : null,
+                                                     : Expressions.TRUE,
                                                      getRegionCondition(province, city, town, group),
                                                      group.disabled.eq(disabled));
         return PageableExecutionUtils.getPage(content, pageable, count::fetchOne);
@@ -223,16 +237,16 @@ public class GroupRepositoryImpl implements GroupRepositoryCustom {
                                                  final String city,
                                                  final String town,
                                                  @NotNull final QGroup group) {
-        BooleanExpression expression = null;
+        BooleanExpression expression = Expressions.TRUE;
 
         if (StringUtils.hasText(province))
-            expression = group.province.eq(province);
+            expression = expression.and(group.province.eq(province));
 
         if (StringUtils.hasText(city))
-            expression = expression == null ? group.city.eq(city) : expression.and(group.city.eq(city));
+            expression = expression.and(group.city.eq(city));
 
         if (StringUtils.hasText(town))
-            expression = expression == null ? group.town.eq(town) : expression.and(group.town.eq(town));
+            expression = expression.and(group.town.eq(town));
 
         return expression;
     }
