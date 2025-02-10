@@ -75,7 +75,12 @@ public class GroupController {
     }
 
     @GetMapping
-    @CustomPageJsonSerializer
+    @CustomPageJsonSerializer(hasContent = false,
+                              size = false,
+                              isFirst = false,
+                              isLast = false,
+                              sort = false,
+                              empty = false)
     public ApiResponse<Page<GroupResponse.ListInfo>> getGroups(
             @RequestParam(required = false) final String categoryName,
             @RequestParam(required = false) final String province,
