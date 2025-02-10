@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import KakaoMap from '@/components/groups/KakaoMap';
 import { Button } from '@/components/ui/button';
+import DeleteConfirmModal from '@/components/groups/DeleteConfirmModal';
 
 interface GroupDetail {
   id: number;
@@ -41,6 +42,7 @@ export default function ClientPage({ groupId }: Props) {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   console.log('GroupId received:', groupId);
 
@@ -144,7 +146,11 @@ export default function ClientPage({ groupId }: Props) {
     router.push(`/groups/${groupId}/edit`);
   };
 
-  const handleDeleteGroup = async () => {
+  const handleDeleteClick = () => {
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
     try {
       const token = localStorage.getItem('accessToken');
       if (!token) {
@@ -221,7 +227,7 @@ export default function ClientPage({ groupId }: Props) {
                   모임 수정
                 </button>
                 <button
-                  onClick={handleDeleteGroup}
+                  onClick={handleDeleteClick}
                   className='px-4 py-2 bg-rose-600 text-white rounded-md hover:bg-rose-700 transition-colors'
                 >
                   모임 삭제
@@ -297,6 +303,11 @@ export default function ClientPage({ groupId }: Props) {
           </div>
         </div>
       </div>
+
+      {/* 삭제 확인 모달 */}
+      {showDeleteModal && (
+        <DeleteConfirmModal onClose={() => setShowDeleteModal(false)} onConfirm={handleDeleteConfirm} />
+      )}
     </div>
   );
 }

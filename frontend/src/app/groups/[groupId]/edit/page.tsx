@@ -1,11 +1,7 @@
+'use client';
+
 import ClientPage from './ClientPage';
 
-interface Props {
-  params: {
-    id: string;
-  };
-}
-
-export default function EditGroupPage({ params }: Props) {
-  return <ClientPage groupId={params.id} />;
+export default function Page({ params }: { params: { groupId: string } }) {
+  return <ClientPage groupId={params.groupId} />;
 }

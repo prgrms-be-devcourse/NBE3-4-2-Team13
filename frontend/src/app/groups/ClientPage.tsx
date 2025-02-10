@@ -215,6 +215,15 @@ export default function ClientPage() {
               >
                 선택
               </button>
+              {(searchParams.province || searchParams.city || searchParams.town) && (
+                <button
+                  type='button'
+                  onClick={() => setSearchParams((prev) => ({ ...prev, province: '', city: '', town: '' }))}
+                  className='px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600'
+                >
+                  초기화
+                </button>
+              )}
             </div>
           </div>
 
