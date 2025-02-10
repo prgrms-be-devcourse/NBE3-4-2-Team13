@@ -7,6 +7,7 @@ import com.app.backend.domain.post.entity.Post;
 import com.app.backend.domain.post.entity.PostStatus;
 import com.app.backend.domain.post.exception.PostException;
 import com.app.backend.domain.post.service.post.PostService;
+import com.app.backend.global.annotation.CustomPageJsonSerializer;
 import com.app.backend.global.dto.response.ApiResponse;
 import com.app.backend.global.error.exception.GlobalErrorCode;
 import jakarta.validation.Valid;
@@ -40,6 +41,7 @@ public class PostController {
     }
 
     @GetMapping
+    @CustomPageJsonSerializer
     public ApiResponse<?> getPosts(
             @RequestParam final Long groupId,
             @RequestParam(defaultValue = "") final String search,
@@ -99,6 +101,7 @@ public class PostController {
     }
 
     @GetMapping("/members")
+    @CustomPageJsonSerializer
     public ApiResponse<?> getMembers(
             @Valid @ModelAttribute final PostReqDto.SearchPostDto searchPost,
             @PageableDefault Pageable pageable,
