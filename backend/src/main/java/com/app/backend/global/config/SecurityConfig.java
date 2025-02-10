@@ -81,7 +81,7 @@ public class SecurityConfig {
 				// API 엔드포인트
 				.requestMatchers(
 					"/api/v1/members/**",
-          "/images/**",
+                    "/images/**",
 					"/ws/**"
 				).permitAll()
 				.anyRequest().authenticated())
