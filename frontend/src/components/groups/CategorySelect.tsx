@@ -16,9 +16,13 @@ export default function CategorySelect({ value, onChange, className = '' }: Cate
   useEffect(() => {
     const fetchCategories = async () => {
       try {
+        const token = localStorage.getItem('accessToken');
         const response = await fetch('http://localhost:8080/api/v1/categories', {
+          method: 'GET',
           headers: {
             Accept: 'application/json',
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
           },
           credentials: 'include',
         });
@@ -28,13 +32,13 @@ export default function CategorySelect({ value, onChange, className = '' }: Cate
         }
 
         const data = await response.json();
-        if (data.isSuccess && data.data) {
+        if (data.isSuccess) {
           setCategories(data.data);
         } else {
           throw new Error(data.message || '카테고리 목록을 불러오는데 실패했습니다.');
         }
       } catch (error) {
-        console.error('Failed to fetch categories:', error);
+        console.error('Error fetching categories:', error);
         setError(error instanceof Error ? error.message : '카테고리 목록을 불러오는데 실패했습니다.');
       } finally {
         setIsLoading(false);

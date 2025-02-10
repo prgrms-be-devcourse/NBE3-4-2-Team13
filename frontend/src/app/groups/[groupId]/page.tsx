@@ -3,7 +3,6 @@
 import { use } from "react";
 import RequireAuthenticated from "@/lib/auth/components/RequireAuthenticated";
 import ClientPage from "./ClientPage";
-import PostPreviewPage from "./PostPreviewPage";
 
 interface Props {
   params: Promise<{
@@ -18,7 +17,6 @@ export default function GroupDetailPage({ params }: Props) {
   return (
     <RequireAuthenticated>
       <ClientPage groupId={resolvedParams.groupId} />
-      <PostPreviewPage groupId={resolvedParams.groupId}></PostPreviewPage>
     </RequireAuthenticated>
   );
 }

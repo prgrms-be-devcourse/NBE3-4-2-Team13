@@ -111,6 +111,30 @@ public class GroupService {
     }
 
     /**
+     * 모임(Group) 단 건 조회
+     *
+     * @param groupId  - 모임 ID
+     * @param memberId - 회원 ID
+     * @return 모임 응답 DTO
+     */
+    public GroupResponse.Detail getGroup(@NotNull @Min(1) final Long groupId, @NotNull @Min(1) final Long memberId) {
+        GroupMembership groupMembership = groupMembershipRepository.findByGroupIdAndMemberIdAndDisabled(groupId,
+                                                                                                        memberId,
+                                                                                                        false)
+                                                                   .orElseThrow(() -> new GroupMembershipException(
+                                                                           GroupMembershipErrorCode.GROUP_MEMBERSHIP_NOT_FOUND
+                                                                   ));
+        boolean isMember = false;
+        boolean isLeader = false;
+        if (groupMembership.getStatus() == MembershipStatus.APPROVED) {
+            isMember = true;
+            if (groupMembership.getGroupRole() == GroupRole.LEADER)
+                isLeader = true;
+        }
+        return GroupResponse.toDetail(groupMembership.getGroup(), isMember, isLeader);
+    }
+
+    /**
      * 모임(Group) 다 건 조회
      *
      * @return 모임 응답 DTO 목록(List)

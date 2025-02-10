@@ -32,35 +32,36 @@ export default function ClientPage() {
     const [isEditing, setEditing] = useState(false);
 
     // 카테고리 목록 불러오기
-    useEffect(() => {
-        const fetchCategories = async () => {
-            try {
-                const token = localStorage.getItem("accessToken");
-                if (!token) throw new Error("인증 토큰이 없습니다.");
+    const fetchCategories = async (targetPage = 1) => {
+        try {
+            const token = localStorage.getItem("accessToken");
+            if (!token) throw new Error("인증 토큰이 없습니다.");
 
-                setLoading(true);
-                const response = await axios.get(
-                    `http://localhost:8080/api/v1/admin/categories?page=${page - 1}&size=10`, // size를 6으로 변경
-                    {
-                        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-                        withCredentials: true,
-                    }
-                );
-
-                if (response.data.isSuccess) {
-                    setCategoryPage(response.data.data);
-                } else {
-                    throw new Error(response.data.message || "데이터를 불러오지 못했습니다.");
+            setLoading(true);
+            const response = await axios.get(
+                `http://localhost:8080/api/v1/admin/categories?page=${targetPage - 1}&size=10`,
+                {
+                    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+                    withCredentials: true,
                 }
-            } catch (error) {
-                setError(error instanceof Error ? error.message : "알 수 없는 오류 발생");
-            } finally {
-                setLoading(false);
-            }
-        };
+            );
 
-        fetchCategories();
+            if (response.data.isSuccess) {
+                setCategoryPage(response.data.data);
+            } else {
+                throw new Error(response.data.message || "데이터를 불러오지 못했습니다.");
+            }
+        } catch (error) {
+            setError(error instanceof Error ? error.message : "알 수 없는 오류 발생");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchCategories(page);
     }, [page]);
+
 
     // 카테고리 삭제 함수
     const deleteCategory = async (categoryId: number) => {
@@ -98,8 +99,8 @@ export default function ClientPage() {
         }
 
         try {
-            setCreating(true); // 요청 시작
-            setCreateErrorMessage(""); // 기존 오류 메시지 초기화
+            setCreating(true);
+            setCreateErrorMessage("");
 
             const token = localStorage.getItem("accessToken");
             if (!token) throw new Error("인증 토큰이 없습니다.");
@@ -117,17 +118,7 @@ export default function ClientPage() {
                 alert("카테고리가 생성되었습니다.");
                 setNewCategory(""); // 입력 필드 초기화
                 setPage(1); // 첫 페이지로 이동
-
-                // 새 카테고리를 기존 목록에 추가
-                setCategoryPage((prev) => {
-                    if (!prev) return prev;
-                    const updatedCategories = [...prev.categories, response.data.data];
-                    return {
-                        ...prev,
-                        categories: updatedCategories,
-                        totalItems: prev.totalItems + 1,
-                    };
-                });
+                fetchCategories(1);
             } else {
                 throw new Error(response.data.message || "카테고리 생성 실패");
             }
@@ -151,7 +142,7 @@ export default function ClientPage() {
                 setCreateErrorMessage("서버와의 통신 오류가 발생했습니다.");
             }
         } finally {
-            setCreating(false); // 요청 완료
+            setCreating(false);
         }
     };
 
@@ -374,7 +365,7 @@ export default function ClientPage() {
                                     이전
                                 </button>
                                 <p className="text-sm text-gray-700">
-                                    {categoryPage.currentPage} / {categoryPage.totalPages}
+                                    {categoryPage.totalPages > 0 ? categoryPage.currentPage : 1} / {Math.max(categoryPage.totalPages, 1)}
                                 </p>
                                 <button
                                     onClick={() => setPage((prev) => Math.min(prev + 1, categoryPage.totalPages))}

@@ -20,6 +20,7 @@ import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.lang.Nullable;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.validation.BindingResult;
@@ -61,13 +62,25 @@ public class GroupController {
     }
 
     @GetMapping("/{groupId}")
-    public ApiResponse<GroupResponse.Detail> getGroupById(@PathVariable @Min(1) final Long groupId) {
-        GroupResponse.Detail responseDto = groupService.getGroup(groupId);
+    public ApiResponse<GroupResponse.Detail> getGroupById(@PathVariable @Min(1) final Long groupId,
+                                                          @Nullable @AuthenticationPrincipal final UserDetails userDetails) {
+        GroupResponse.Detail responseDto = null;
+
+        if (userDetails != null && groupMembershipService.isMember(groupId, ((MemberDetails) userDetails).getId()))
+            responseDto = groupService.getGroup(groupId, ((MemberDetails) userDetails).getId());
+        else
+            responseDto = groupService.getGroup(groupId);
+
         return ApiResponse.of(true, HttpStatus.OK, GroupMessageConstant.READ_GROUP_SUCCESS, responseDto);
     }
 
     @GetMapping
-    @CustomPageJsonSerializer
+    @CustomPageJsonSerializer(hasContent = false,
+                              size = false,
+                              isFirst = false,
+                              isLast = false,
+                              sort = false,
+                              empty = false)
     public ApiResponse<Page<GroupResponse.ListInfo>> getGroups(
             @RequestParam(required = false) final String categoryName,
             @RequestParam(required = false) final String province,
