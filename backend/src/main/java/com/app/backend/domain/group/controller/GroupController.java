@@ -20,6 +20,7 @@ import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.lang.Nullable;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.validation.BindingResult;
@@ -49,6 +50,14 @@ public class GroupController {
     public ApiResponse<Void> createGroup(@RequestBody @Valid final GroupRequest.Create requestDto,
                                          BindingResult bindingResult,
                                          @AuthenticationPrincipal final UserDetails userDetails) {
+        System.out.println("requestDto = " + requestDto);
+        System.out.println("requestDto.getName() = " + requestDto.getName());
+        System.out.println("requestDto.getProvince() = " + requestDto.getProvince());
+        System.out.println("requestDto.getCity() = " + requestDto.getCity());
+        System.out.println("requestDto.getTown() = " + requestDto.getTown());
+        System.out.println("requestDto.getMaxRecruitCount() = " + requestDto.getMaxRecruitCount());
+        System.out.println("requestDto.getDescription() = " + requestDto.getDescription());
+        System.out.println("requestDto.getCategoryName() = " + requestDto.getCategoryName());
         if (bindingResult.hasErrors())
             throw new GroupException(GlobalErrorCode.INVALID_INPUT_VALUE);
 
@@ -61,8 +70,15 @@ public class GroupController {
     }
 
     @GetMapping("/{groupId}")
-    public ApiResponse<GroupResponse.Detail> getGroupById(@PathVariable @Min(1) final Long groupId) {
-        GroupResponse.Detail responseDto = groupService.getGroup(groupId);
+    public ApiResponse<GroupResponse.Detail> getGroupById(@PathVariable @Min(1) final Long groupId,
+                                                          @Nullable @AuthenticationPrincipal final UserDetails userDetails) {
+        GroupResponse.Detail responseDto = null;
+
+        if (userDetails == null)
+            responseDto = groupService.getGroup(groupId);
+        else
+            responseDto = groupService.getGroup(groupId, ((MemberDetails) userDetails).getId());
+
         return ApiResponse.of(true, HttpStatus.OK, GroupMessageConstant.READ_GROUP_SUCCESS, responseDto);
     }
 

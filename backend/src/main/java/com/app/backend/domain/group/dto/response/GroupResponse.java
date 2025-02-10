@@ -28,6 +28,26 @@ public class GroupResponse {
                      .build();
     }
 
+    public static Detail toDetail(final Group group, final boolean isMember, final boolean isAdmin) {
+        return Detail.builder()
+                     .id(group.getId())
+                     .categoryName(group.getCategory().getName())
+                     .name(group.getName())
+                     .province(group.getProvince())
+                     .city(group.getCity())
+                     .town(group.getTown())
+                     .description(group.getDescription())
+                     .recruitStatus(group.getRecruitStatus().name())
+                     .maxRecruitCount(group.getMaxRecruitCount())
+                     .currentMemberCount(Math.toIntExact(
+                             group.getMembers().stream().filter(m -> m.getStatus() == MembershipStatus.APPROVED
+                                                                     && !m.getDisabled()).count()
+                     )).createdAt(AppUtil.localDateTimeToString(group.getCreatedAt()))
+                     .isMember(isMember)
+                     .isAdmin(isAdmin)
+                     .build();
+    }
+
     public static ListInfo toListInfo(final Group group) {
         return ListInfo.builder()
                        .id(group.getId())
@@ -60,6 +80,8 @@ public class GroupResponse {
         private final Integer maxRecruitCount;
         private final Integer currentMemberCount;
         private final String  createdAt;
+        private final Boolean isMember;
+        private final Boolean isAdmin;
     }
 
     @Getter
