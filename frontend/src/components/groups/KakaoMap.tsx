@@ -5,7 +5,9 @@ import { useEffect, useRef } from 'react';
 interface KakaoMapProps {
   latitude: string;
   longitude: string;
-  level?: number;
+  level: number;
+  groupName?: string;
+  address?: string;
 }
 
 declare global {
@@ -14,36 +16,47 @@ declare global {
   }
 }
 
-export default function KakaoMap({ latitude, longitude, level = 7 }: KakaoMapProps) {
+export default function KakaoMap({ latitude, longitude, level, groupName, address }: KakaoMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const script = document.createElement('script');
-    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_KEY}&autoload=false`;
+    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_KEY}&libraries=services&autoload=false`;
 
     script.onload = () => {
       window.kakao.maps.load(() => {
         if (!mapRef.current) return;
 
-        try {
-          const coords = new window.kakao.maps.LatLng(latitude, longitude);
-          const options = {
-            center: coords,
-            level: level,
-          };
+        const position = new window.kakao.maps.LatLng(parseFloat(latitude), parseFloat(longitude));
+        const options = {
+          center: position,
+          level: level,
+        };
 
-          const map = new window.kakao.maps.Map(mapRef.current, options);
+        const map = new window.kakao.maps.Map(mapRef.current, options);
 
-          // 지도 타입 컨트롤
-          const mapTypeControl = new window.kakao.maps.MapTypeControl();
-          map.addControl(mapTypeControl, window.kakao.maps.ControlPosition.TOPRIGHT);
+        // 커스텀 오버레이 콘텐츠
+        const content = `
+          <div class="custom-overlay bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg">
+            <h3 class="font-bold text-gray-900 dark:text-white">${groupName || '모임 위치'}</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-300">${address || ''}</p>
+          </div>
+        `;
 
-          // 줌 컨트롤
-          const zoomControl = new window.kakao.maps.ZoomControl();
-          map.addControl(zoomControl, window.kakao.maps.ControlPosition.RIGHT);
-        } catch (error) {
-          console.error('Error creating map:', error);
-        }
+        // 커스텀 오버레이 생성
+        new window.kakao.maps.CustomOverlay({
+          map: map,
+          position: position,
+          content: content,
+          yAnchor: 1,
+        });
+
+        // 지도 컨트롤 추가
+        const mapTypeControl = new window.kakao.maps.MapTypeControl();
+        map.addControl(mapTypeControl, window.kakao.maps.ControlPosition.TOPRIGHT);
+
+        const zoomControl = new window.kakao.maps.ZoomControl();
+        map.addControl(zoomControl, window.kakao.maps.ControlPosition.RIGHT);
       });
     };
 
@@ -54,9 +67,7 @@ export default function KakaoMap({ latitude, longitude, level = 7 }: KakaoMapPro
         document.head.removeChild(script);
       }
     };
-  }, [latitude, longitude, level]);
+  }, [latitude, longitude, level, groupName, address]);
 
-  return (
-    <div ref={mapRef} className='w-full h-[400px] rounded-lg shadow-lg mb-8' style={{ border: '1px solid #e2e8f0' }} />
-  );
+  return <div ref={mapRef} className='w-full h-[400px] rounded-lg mb-6' />;
 }

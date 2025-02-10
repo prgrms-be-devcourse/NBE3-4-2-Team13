@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import KakaoMap from '@/components/groups/KakaoMap';
+import { Button } from '@/components/ui/button';
 
 interface GroupDetail {
   id: number;
@@ -16,6 +17,8 @@ interface GroupDetail {
   maxRecruitCount: number;
   currentMemberCount: number;
   createdAt: string;
+  isMember: boolean;
+  isAdmin: boolean;
 }
 
 interface Post {
@@ -37,6 +40,7 @@ export default function ClientPage({ groupId }: Props) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
   console.log('GroupId received:', groupId);
 
@@ -104,8 +108,68 @@ export default function ClientPage({ groupId }: Props) {
     }
   };
 
-  const handleEdit = () => {
+  const handleLeaveGroup = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        setError('로그인이 필요합니다.');
+        return;
+      }
+
+      const response = await fetch(`http://localhost:8080/api/v1/groups/${groupId}/leave`, {
+        method: 'DELETE',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('모임 탈퇴에 실패했습니다.');
+      }
+
+      router.push('/groups');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : '모임 탈퇴 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleJoinClick = () => {
+    router.push(`/groups/${groupId}/join`);
+  };
+
+  const handleEditClick = () => {
     router.push(`/groups/${groupId}/edit`);
+  };
+
+  const handleDeleteGroup = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        setError('로그인이 필요합니다.');
+        return;
+      }
+
+      const response = await fetch(`http://localhost:8080/api/v1/groups/${groupId}`, {
+        method: 'DELETE',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('모임 삭제에 실패했습니다.');
+      }
+
+      router.push('/groups');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : '모임 삭제 중 오류가 발생했습니다.');
+    }
   };
 
   if (!group) {
@@ -119,7 +183,13 @@ export default function ClientPage({ groupId }: Props) {
         <>
           {/* 디버깅용 좌표 출력 */}
           <div className='hidden'>Coordinates: {JSON.stringify(coordinates)}</div>
-          <KakaoMap latitude={coordinates.latitude} longitude={coordinates.longitude} level={6} />
+          <KakaoMap
+            latitude={coordinates.latitude}
+            longitude={coordinates.longitude}
+            level={6}
+            groupName={group.name}
+            address={`${group.province} ${group.city} ${group.town}`}
+          />
         </>
       )}
 
@@ -132,12 +202,42 @@ export default function ClientPage({ groupId }: Props) {
             </span>
             <h1 className='text-3xl font-bold text-gray-900 dark:text-white mt-2'>{group.name}</h1>
           </div>
-          <button
-            onClick={handleEdit}
-            className='px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors'
-          >
-            수정
-          </button>
+          <div className='flex gap-2'>
+            {group.isMember && (
+              <button
+                onClick={handleLeaveGroup}
+                className='px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 transition-colors'
+              >
+                모임 탈퇴
+              </button>
+            )}
+
+            {group.isAdmin && (
+              <>
+                <button
+                  onClick={handleEditClick}
+                  className='px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors'
+                >
+                  모임 수정
+                </button>
+                <button
+                  onClick={handleDeleteGroup}
+                  className='px-4 py-2 bg-rose-600 text-white rounded-md hover:bg-rose-700 transition-colors'
+                >
+                  모임 삭제
+                </button>
+              </>
+            )}
+
+            {!group.isMember && (
+              <button
+                onClick={handleJoinClick}
+                className='px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors'
+              >
+                모임 가입
+              </button>
+            )}
+          </div>
         </div>
 
         <div className='space-y-4 text-gray-600 dark:text-gray-300'>
@@ -168,6 +268,8 @@ export default function ClientPage({ groupId }: Props) {
           </div>
         </div>
       </div>
+
+      {error && <div className='mt-4 p-4 bg-destructive/10 text-destructive rounded-md'>{error}</div>}
 
       {/* 게시판 섹션 (미구현) */}
       <div className='bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6'>

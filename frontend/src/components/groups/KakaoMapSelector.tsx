@@ -40,13 +40,18 @@ export default function KakaoMapSelector({ onClose, onSelect }: KakaoMapSelector
             if (status === window.kakao.maps.services.Status.OK) {
               if (result[0]?.address) {
                 const addr = result[0].address;
-                const address = {
-                  province: addr.region_1depth_name,
-                  city: addr.region_2depth_name,
-                  town: addr.region_3depth_name,
-                };
-                console.log('Selected address:', address);
-                setSelectedAddress(address);
+
+                if (addr.region_3depth_name) {
+                  const address = {
+                    province: addr.region_1depth_name,
+                    city: addr.region_2depth_name,
+                    town: addr.region_3depth_name,
+                  };
+                  console.log('Selected address:', address);
+                  setSelectedAddress(address);
+                } else {
+                  console.log('No detailed address available');
+                }
               }
             }
           });

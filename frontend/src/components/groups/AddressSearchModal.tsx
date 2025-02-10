@@ -119,7 +119,22 @@ export default function AddressSearchModal({ onClose, onSelect }: AddressSearchM
           return a.region_3depth_name.localeCompare(b.region_3depth_name);
         });
 
-        setAddresses(sortedAddresses);
+        const addresses = sortedAddresses
+          .map((doc: any) => {
+            const addressParts = doc.address_name.split(' ');
+            return {
+              address_name: addressParts.slice(0, 3).join(' '),
+              region_1depth_name: addressParts[0] || '', // 시/도
+              region_2depth_name: addressParts[1] || '', // 구/군
+              region_3depth_name: addressParts[2] || '', // 동/읍/면
+            };
+          })
+          .filter((addr) => {
+            // 시/도, 구/군, 동/읍/면이 모두 있는 주소만 포함
+            return addr.region_1depth_name && addr.region_2depth_name && addr.region_3depth_name;
+          });
+
+        setAddresses(addresses);
       } else {
         setError('검색 결과가 없습니다.');
       }
