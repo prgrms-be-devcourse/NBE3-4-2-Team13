@@ -24,10 +24,16 @@ import com.app.backend.domain.group.entity.RecruitStatus;
 import com.app.backend.domain.group.exception.GroupException;
 import com.app.backend.domain.group.exception.GroupMembershipException;
 import com.app.backend.domain.group.supporter.WebMvcTestSupporter;
+import com.app.backend.global.annotation.CustomPageJsonSerializer;
 import com.app.backend.global.annotation.CustomWithMockUser;
 import com.app.backend.global.dto.response.ApiResponse;
 import com.app.backend.global.error.exception.GlobalErrorCode;
+import com.app.backend.global.module.CustomPageModule;
 import com.app.backend.global.util.ReflectionUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import java.lang.reflect.Proxy;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -210,6 +216,11 @@ class GroupControllerTest extends WebMvcTestSupporter {
     @DisplayName("[성공] 모임 목록 조회")
     void getGroups() throws Exception {
         //Given
+        CustomPageJsonSerializer annotation = createFakeAnnotation();
+        objectMapper = new ObjectMapper();
+        objectMapper.registerModules(new JavaTimeModule(), new CustomPageModule(annotation));
+        objectMapper.enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
         GroupRequest.Search requestDto = GroupRequest.Search.builder()
                                                             .categoryName("category")
                                                             .name("1")
@@ -642,6 +653,45 @@ class GroupControllerTest extends WebMvcTestSupporter {
                          assertThat(result.getResolvedException().getMessage()).isEqualTo(errorCode.getMessage());
                      })
                      .andDo(print());
+    }
+
+    private CustomPageJsonSerializer createFakeAnnotation() {
+        return (CustomPageJsonSerializer) Proxy.newProxyInstance(
+                CustomPageJsonSerializer.class.getClassLoader(),
+                new Class[]{CustomPageJsonSerializer.class},
+                (proxy, method, args) -> {
+                    switch (method.getName()) {
+                        case "content":
+                            return true;
+                        case "hasContent":
+                            return true;
+                        case "totalPages":
+                            return true;
+                        case "totalElements":
+                            return true;
+                        case "numberOfElements":
+                            return true;
+                        case "size":
+                            return true;
+                        case "number":
+                            return true;
+                        case "hasPrevious":
+                            return true;
+                        case "hasNext":
+                            return true;
+                        case "isFirst":
+                            return true;
+                        case "isLast":
+                            return true;
+                        case "sort":
+                            return true;
+                        case "empty":
+                            return true;
+                        default:
+                            return method.getDefaultValue();
+                    }
+                }
+        );
     }
 
 }
