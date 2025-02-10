@@ -64,7 +64,7 @@ public class CommentControllerReplyTest {
 		memberDetails = new MemberDetails(testMember);
 
 		// 테스트용 게시물 생성
-		Post testPost = Post.builder()
+		testPost = Post.builder()
                 .title("테스트 게시글")
                 .content("테스트 내용")
                 .postStatus(PostStatus.PUBLIC)
