@@ -125,7 +125,11 @@ function EditPostPage() {
       alert("게시글이 성공적으로 수정되었습니다!");
       router.push(`/groups/${params.groupId}/post/${postId}`);
     } catch (err: any) {
-      setError("게시글 수정에 실패했습니다.");
+      if (err && err == "F003") {
+        setError("지원하지 않는 파일 타입 입니다")
+      } else {
+        setError("게시글 수정에 실패했습니다.");
+      }
     } finally {
       setLoading(false);
     }

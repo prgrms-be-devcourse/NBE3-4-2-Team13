@@ -76,8 +76,11 @@ function PostCreatePage() {
       alert("게시글이 성공적으로 등록되었습니다!");
       router.push(`/groups/${params.groupId}/post/${postId}`);
     } catch (error: any) {
-      setError("게시글 등록에 실패했습니다.");
-      console.error("게시글 등록 오류:", error);
+      if (error && error.response.data.code == "F003") {
+        setError("지원하지 않는 파일 타입 입니다");
+      } else {
+        setError("게시글 등록에 실패했습니다.");
+      }
     } finally {
       setLoading(false);
     }
@@ -167,6 +170,7 @@ function PostCreatePage() {
                 <li key={index} className="flex justify-between items-center">
                   <span>{file.name}</span>
                   <button
+                    type="button"
                     onClick={() => handleFileRemove(index)}
                     className="text-red-500 text-xs bg-gray-200 px-2 py-1 rounded"
                   >

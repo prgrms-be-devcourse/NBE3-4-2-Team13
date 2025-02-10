@@ -32,7 +32,9 @@ function PostPage() {
         const data = await getPost(postId, token);
         setPost(data);
       } catch (error) {
-        console.error();
+        if(error && error == "GM001"){
+          alert("접근권한이 없습니다")
+        }
         router.push(`/groups/${groupId}/post`);
       } finally {
         setLoading(false);
