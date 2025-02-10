@@ -2,7 +2,7 @@
 
 import { useState, useEffect, FormEvent, ChangeEvent } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { useFileUpload } from "../../hooks/useFileUpload";
+import { useFileUpload } from "../../../../[groupId]/post/hooks/useFileUpload";
 import { getPost, updatePost } from "@/api/post/postapi";
 
 function EditPostPage() {
@@ -123,7 +123,7 @@ function EditPostPage() {
       await updatePost(postId, formData, token);
 
       alert("게시글이 성공적으로 수정되었습니다!");
-      router.push(`/group/${params.groupId}/post/${postId}`);
+      router.push(`/groups/${params.groupId}/post/${postId}`);
     } catch (err: any) {
       setError("게시글 수정에 실패했습니다.");
     } finally {

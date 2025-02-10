@@ -47,7 +47,7 @@ export default function PostListPage() {
         {/* 글작성 버튼 */}
         <div className="absolute top-0 right-0">
           <Link
-            href={`/group/${groupId}/post/create`}
+            href={`/groups/${groupId}/post/create`}
             className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-full text-gray-700 hover:bg-gray-100 transition font-medium"
           >
             <Plus className="w-5 h-5" />
@@ -102,7 +102,7 @@ export default function PostListPage() {
           {posts.map((post) => (
             <Link
               key={post.postId}
-              href={`/group/${groupId}/post/${post.postId}`}
+              href={`/groups/${groupId}/post/${post.postId}`}
             >
               <div className="block bg-white p-4 rounded-lg hover:bg-gray-50 transition cursor-pointer">
                 <h2 className="text-xl font-bold text-gray-800 mb-1">

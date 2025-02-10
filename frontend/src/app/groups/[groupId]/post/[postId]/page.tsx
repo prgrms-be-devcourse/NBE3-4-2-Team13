@@ -14,7 +14,7 @@ function PostPage() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const postId = Number(params.postId);
-  const groupId = Number(params.id);
+  const groupId = Number(params.groupId);
   const hasFetched = useRef(false);
 
   useEffect(() => {

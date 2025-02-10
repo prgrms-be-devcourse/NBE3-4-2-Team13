@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { usedownloadFile } from "@/app/group/[groupId]/post/hooks/useFileDownload";
+import { usedownloadFile } from "@/app/groups/[groupId]/post/hooks/useFileDownload";
 import { LoginMemberContext } from "@/stores/auth/LoginMember";
 import { MoreVertical, Edit, Trash2 } from "lucide-react";
 import { Post } from "@/types/Post";
@@ -41,7 +41,7 @@ function PostContent({ post }: { post: Post }) {
         }
         await deletePost(post.postId, token);
         alert("게시글이 삭제되었습니다.");
-        router.push(`/group/${post.groupId}/post`);
+        router.push(`/groups/${post.groupId}/post`);
       } catch (error) {
         alert("게시글 삭제에 실패했습니다.");
       }
@@ -122,7 +122,7 @@ function PostContent({ post }: { post: Post }) {
           {showActions && (
             <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 shadow-lg rounded-md z-10">
               <Link
-                href={`/group/${post.groupId}/post/${post.postId}/edit`}
+                href={`/groups/${post.groupId}/post/${post.postId}/edit`}
                 legacyBehavior
               >
                 <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">

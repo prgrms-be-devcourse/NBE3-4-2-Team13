@@ -3,7 +3,7 @@
 import { useState, ChangeEvent, FormEvent } from "react";
 import { useRouter, useParams } from "next/navigation";
 import api from "@/api";
-import { useFileUpload } from "../hooks/useFileUpload";
+import { useFileUpload } from "../../../[groupId]/post/hooks/useFileUpload";
 
 function PostCreatePage() {
   const params = useParams();
@@ -74,7 +74,7 @@ function PostCreatePage() {
       const postId = response.data.data.postId;
 
       alert("게시글이 성공적으로 등록되었습니다!");
-      router.push(`/group/${params.groupId}/post/${postId}`);
+      router.push(`/groups/${params.groupId}/post/${postId}`);
     } catch (error: any) {
       setError("게시글 등록에 실패했습니다.");
       console.error("게시글 등록 오류:", error);
