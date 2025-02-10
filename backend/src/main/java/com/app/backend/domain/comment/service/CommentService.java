@@ -120,7 +120,7 @@ public class CommentService {
 
 		Post post = getPostValidate(postId);
 
-		Page<Comment> comments = commentRepository.findByPostAndDisabled(post, false, pageable);
+		Page<Comment> comments = commentRepository.findByPostAndDisabledAndParentIsNull(post, false, pageable);
 
 		return comments.map(CommentResponse.CommentList::from);
 	}
