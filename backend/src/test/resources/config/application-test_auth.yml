@@ -26,3 +26,8 @@ jwt:
   token:
     access-expiration: 1800000
     refresh_expiration: 604800000
+
+#Kakao API
+kakao:
+  rest-api:
+    key: KAKAO_REST_API_KEY

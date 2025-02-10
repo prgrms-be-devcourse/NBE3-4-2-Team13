@@ -12,6 +12,7 @@ public class GroupResponse {
 
     public static Detail toDetail(final Group group) {
         return Detail.builder()
+                     .id(group.getId())
                      .categoryName(group.getCategory().getName())
                      .name(group.getName())
                      .province(group.getProvince())
@@ -29,6 +30,7 @@ public class GroupResponse {
 
     public static ListInfo toListInfo(final Group group) {
         return ListInfo.builder()
+                       .id(group.getId())
                        .categoryName(group.getCategory().getName())
                        .name(group.getName())
                        .province(group.getProvince())
@@ -47,6 +49,7 @@ public class GroupResponse {
     @Builder(access = AccessLevel.PRIVATE)
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Detail {
+        private final Long    id;
         private final String  categoryName;
         private final String  name;
         private final String  province;
@@ -63,6 +66,7 @@ public class GroupResponse {
     @Builder(access = AccessLevel.PRIVATE)
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     public static class ListInfo {
+        private final Long    id;
         private final String  categoryName;
         private final String  name;
         private final String  province;

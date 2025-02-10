@@ -30,6 +30,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
     // WebSocket
     implementation("org.springframework.boot:spring-boot-starter-websocket")
     // MongoDB
@@ -66,8 +67,8 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
     //test lombok
-    testImplementation ("org.projectlombok:lombok")
-    testAnnotationProcessor ("org.projectlombok:lombok")
+    testImplementation("org.projectlombok:lombok")
+    testAnnotationProcessor("org.projectlombok:lombok")
 
     // env 파일 사용 (카카오 보안 키)
     implementation("me.paulschwarz:spring-dotenv:4.0.0")
