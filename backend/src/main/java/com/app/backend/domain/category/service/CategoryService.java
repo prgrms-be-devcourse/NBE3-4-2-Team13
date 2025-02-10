@@ -64,7 +64,7 @@ public class CategoryService {
 		if (name.length() > 10) {
 			throw new CategoryException(CategoryErrorCode.CATEGORY_NAME_TOO_LONG);
 		}
-		if (categoryRepository.existsByName(name)) {
+		if (categoryRepository.existsByNameAndDisabled(name, false)) {
 			throw new CategoryException(CategoryErrorCode.CATEGORY_NAME_DUPLICATE);
 		}
 	}
