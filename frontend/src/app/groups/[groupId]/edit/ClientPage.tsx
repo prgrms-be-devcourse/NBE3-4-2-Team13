@@ -39,10 +39,12 @@ export default function ClientPage({ groupId }: Props) {
   useEffect(() => {
     const fetchGroupData = async () => {
       try {
+        const token = localStorage.getItem('accessToken');
         console.log('Fetching group data for ID:', groupId); // 디버깅용
         const response = await fetch(`http://localhost:8080/api/v1/groups/${groupId}`, {
           headers: {
             Accept: 'application/json',
+            Authorization: `Bearer ${token}`,
           },
           credentials: 'include',
         });

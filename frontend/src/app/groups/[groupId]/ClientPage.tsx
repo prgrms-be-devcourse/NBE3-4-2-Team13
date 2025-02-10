@@ -43,10 +43,12 @@ export default function ClientPage({ groupId }: Props) {
   useEffect(() => {
     const fetchGroupData = async () => {
       try {
+        const token = localStorage.getItem('accessToken');
         const response = await fetch(`http://localhost:8080/api/v1/groups/${groupId}`, {
           headers: {
             Accept: 'application/json',
             'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
           },
           credentials: 'include',
         });
@@ -74,12 +76,14 @@ export default function ClientPage({ groupId }: Props) {
     if (!group) return;
 
     try {
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(
         `http://localhost:8080/api/v1/proxy/kakao/address?province=${group.province}&city=${group.city}&town=${group.town}`,
         {
           headers: {
             Accept: 'application/json',
             'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
           },
         }
       );
