@@ -258,6 +258,7 @@ class GroupControllerTest extends WebMvcTestSupporter {
         objectMapper.enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
         GroupRequest.Search requestDto = GroupRequest.Search.builder()
+                                                            .recruitStatus("RECRUITING")
                                                             .categoryName("category")
                                                             .name("1")
                                                             .province("test province10")
