@@ -136,10 +136,12 @@ export default function ClientPage() {
       queryParams.append('page', '0');
       queryParams.append('size', '10');
 
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`http://localhost:8080/api/v1/groups?${queryParams}`, {
         headers: {
           Accept: 'application/json',
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
       });
 
