@@ -110,6 +110,33 @@ export default function MeetingApplicationsPage({ groupId }: Props) {
     }
   };
 
+  const handleModifyRole = async (memberId: number) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`http://localhost:8080/api/v1/groups/${groupId}/permission`, {
+        method: 'PATCH',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          memberId,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.isSuccess) {
+        fetchApplications(); // 목록 새로고침
+      } else {
+        setError(data.message || '권한 변경에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('Failed to modify role:', error);
+      setError('권한 변경 중 오류가 발생했습니다.');
+    }
+  };
+
   const showConfirmModal = (title: string, message: string, onConfirm: () => void) => {
     setModalConfig({ title, message, onConfirm });
     setShowModal(true);
@@ -195,15 +222,29 @@ export default function MeetingApplicationsPage({ groupId }: Props) {
                       </span>
                     )}
                     {application.isMember && (
-                      <span
-                        className={`px-3 py-1.5 rounded-full text-sm ${
-                          application.isAdmin
-                            ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100'
-                            : 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100'
-                        }`}
-                      >
-                        {application.isAdmin ? '관리자' : '멤버'}
-                      </span>
+                      <div className='flex items-center gap-2'>
+                        <span
+                          className={`px-3 py-1.5 rounded-full text-sm ${
+                            application.isAdmin
+                              ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100'
+                              : 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100'
+                          }`}
+                        >
+                          {application.isAdmin ? '관리자' : '멤버'}
+                        </span>
+                        <button
+                          onClick={() =>
+                            showConfirmModal(
+                              '권한 변경',
+                              `이 회원의 권한을 ${application.isAdmin ? '멤버' : '관리자'}로 변경하시겠습니까?`,
+                              () => handleModifyRole(application.memberId)
+                            )
+                          }
+                          className='px-3 py-1.5 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 transition-colors text-sm'
+                        >
+                          권한 변경
+                        </button>
+                      </div>
                     )}
                   </>
                 )}
