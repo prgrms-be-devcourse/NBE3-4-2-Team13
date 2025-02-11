@@ -17,6 +17,16 @@ interface MeetingApplicationDto {
   isAdmin: boolean;
 }
 
+interface PageResponse<T> {
+  content: T[];
+  totalPages: number;
+  totalElements: number;
+  numberOfElements: number;
+  number: number;
+  hasPrevious: boolean;
+  hasNext: boolean;
+}
+
 interface Props {
   groupId: string;
 }
@@ -35,6 +45,8 @@ export default function MeetingApplicationsPage({ groupId }: Props) {
     message: '',
     onConfirm: () => {},
   });
+  const [hasNext, setHasNext] = useState(false);
+  const [hasPrevious, setHasPrevious] = useState(false);
 
   const fetchApplications = async () => {
     try {
@@ -57,9 +69,12 @@ export default function MeetingApplicationsPage({ groupId }: Props) {
 
       const data = await response.json();
       if (data.isSuccess) {
-        setApplications(data.data.content);
-        setTotalPages(data.data.totalPages);
-        setTotalElements(data.data.totalElements);
+        const pageData: PageResponse<MeetingApplicationDto> = data.data;
+        setApplications(pageData.content);
+        setTotalPages(pageData.totalPages);
+        setTotalElements(pageData.totalElements);
+        setHasNext(pageData.hasNext);
+        setHasPrevious(pageData.hasPrevious);
       } else {
         setError(data.message || '신청 목록을 불러오는데 실패했습니다.');
       }
@@ -204,6 +219,8 @@ export default function MeetingApplicationsPage({ groupId }: Props) {
             currentPage={currentPage}
             totalPages={totalPages}
             totalElements={totalElements}
+            hasNext={hasNext}
+            hasPrevious={hasPrevious}
             onPageChange={setCurrentPage}
           />
         </div>
