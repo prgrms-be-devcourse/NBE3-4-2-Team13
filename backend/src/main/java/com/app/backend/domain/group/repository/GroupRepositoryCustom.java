@@ -24,4 +24,13 @@ public interface GroupRepositoryCustom {
                                                             String city, String town, Boolean disabled,
                                                             Pageable pageable);
 
+    List<Group> findAllByCategoryAndRecruitStatusAndNameContainingAndRegion(String categoryName, String recruitStatus,
+                                                                            String name, String province,
+                                                                            String city, String town, Boolean disabled);
+
+    Page<Group> findAllByCategoryAndRecruitStatusAndNameContainingAndRegion(String categoryName, String recruitStatus,
+                                                                            String name, String province,
+                                                                            String city, String town, Boolean disabled,
+                                                                            Pageable pageable);
+
 }

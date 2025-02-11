@@ -2,6 +2,7 @@ package com.app.backend.domain.group.repository;
 
 import com.app.backend.domain.group.entity.Group;
 import com.app.backend.domain.group.entity.QGroup;
+import com.app.backend.domain.group.entity.RecruitStatus;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
@@ -172,6 +173,7 @@ public class GroupRepositoryImpl implements GroupRepositoryCustom {
      * @param city         - 시/군/구
      * @param town         - 읍/면/동
      * @param disabled     - 활성화 여부(Soft Delete 상태)
+     * @param pageable     - 페이징 객체
      * @return 모임 페이징 목록
      */
     @Override
@@ -196,22 +198,101 @@ public class GroupRepositoryImpl implements GroupRepositoryCustom {
                                              .offset(pageable.getOffset())
                                              .limit(pageable.getPageSize())
                                              .fetch();
-        JPAQuery<Group> query = jpaQueryFactory.selectFrom(group)
-                                               .where(categoryName != null && !categoryName.isBlank()
-                                                      ? group.category.name.eq(categoryName)
-                                                      : Expressions.TRUE,
-                                                      name != null && !name.isBlank()
-                                                      ? group.name.contains(name)
-                                                      : Expressions.TRUE,
-                                                      getRegionCondition(province, city, town, group),
-                                                      group.disabled.eq(disabled))
-                                               .orderBy(getSortCondition(pageable, group))
-                                               .offset(pageable.getOffset())
-                                               .limit(pageable.getPageSize());
         JPAQuery<Long> count = jpaQueryFactory.select(group.count())
                                               .from(group)
                                               .where(categoryName != null && !categoryName.isBlank()
                                                      ? group.category.name.eq(categoryName)
+                                                     : Expressions.TRUE,
+                                                     name != null && !name.isBlank()
+                                                     ? group.name.contains(name)
+                                                     : Expressions.TRUE,
+                                                     getRegionCondition(province, city, town, group),
+                                                     group.disabled.eq(disabled));
+        return PageableExecutionUtils.getPage(content, pageable, count::fetchOne);
+    }
+
+    /**
+     * 카테고리명, 모집 상태, 모임 이름, 검색할 지역(시/도, 시/군/구, 읍/면/동)으로 모임 목록 조회
+     *
+     * @param categoryName  - 카테고리명
+     * @param recruitStatus - 모집 상태
+     * @param name          - 모임 이름
+     * @param province      - 시/도
+     * @param city          - 시/군/구
+     * @param town          - 읍/면/동
+     * @param disabled      - 활성화 여부(Soft Delete 상태)
+     * @return
+     */
+    @Override
+    public List<Group> findAllByCategoryAndRecruitStatusAndNameContainingAndRegion(final String categoryName,
+                                                                                   final String recruitStatus,
+                                                                                   final String name,
+                                                                                   final String province,
+                                                                                   final String city,
+                                                                                   final String town,
+                                                                                   @NotNull final Boolean disabled) {
+        QGroup group = QGroup.group;
+        return jpaQueryFactory.selectFrom(group)
+                              .where(categoryName != null && !categoryName.isBlank()
+                                     ? group.category.name.eq(categoryName)
+                                     : Expressions.TRUE,
+                                     recruitStatus != null && !recruitStatus.isBlank()
+                                     ? group.recruitStatus.eq(RecruitStatus.valueOf(recruitStatus))
+                                     : Expressions.TRUE,
+                                     name != null && !name.isBlank()
+                                     ? group.name.contains(name)
+                                     : Expressions.TRUE,
+                                     getRegionCondition(province, city, town, group),
+                                     group.disabled.eq(disabled))
+                              .fetch();
+    }
+
+    /**
+     * 카테고리명, 모집 상태, 모임 이름, 검색할 지역(시/도, 시/군/구, 읍/면/동)으로 모임 페이징 목록 조회
+     *
+     * @param categoryName  - 카테고리명
+     * @param recruitStatus - 모집 상태
+     * @param name          - 모임 이름
+     * @param province      - 시/도
+     * @param city          - 시/군/구
+     * @param town          - 읍/면/동
+     * @param disabled      - 활성화 여부(Soft Delete 상태)
+     * @param pageable      - 페이징 객체
+     * @return
+     */
+    @Override
+    public Page<Group> findAllByCategoryAndRecruitStatusAndNameContainingAndRegion(final String categoryName,
+                                                                                   final String recruitStatus,
+                                                                                   final String name,
+                                                                                   final String province,
+                                                                                   final String city,
+                                                                                   final String town,
+                                                                                   @NotNull final Boolean disabled,
+                                                                                   @NotNull final Pageable pageable) {
+        QGroup group = QGroup.group;
+        List<Group> content = jpaQueryFactory.selectFrom(group)
+                                             .where(categoryName != null && !categoryName.isBlank()
+                                                    ? group.category.name.eq(categoryName)
+                                                    : Expressions.TRUE,
+                                                    recruitStatus != null && !recruitStatus.isBlank()
+                                                    ? group.recruitStatus.eq(RecruitStatus.valueOf(recruitStatus))
+                                                    : Expressions.TRUE,
+                                                    name != null && !name.isBlank()
+                                                    ? group.name.contains(name)
+                                                    : Expressions.TRUE,
+                                                    getRegionCondition(province, city, town, group),
+                                                    group.disabled.eq(disabled))
+                                             .orderBy(getSortCondition(pageable, group))
+                                             .offset(pageable.getOffset())
+                                             .limit(pageable.getPageSize())
+                                             .fetch();
+        JPAQuery<Long> count = jpaQueryFactory.select(group.count())
+                                              .from(group)
+                                              .where(categoryName != null && !categoryName.isBlank()
+                                                     ? group.category.name.eq(categoryName)
+                                                     : Expressions.TRUE,
+                                                     recruitStatus != null && !recruitStatus.isBlank()
+                                                     ? group.recruitStatus.eq(RecruitStatus.valueOf(recruitStatus))
                                                      : Expressions.TRUE,
                                                      name != null && !name.isBlank()
                                                      ? group.name.contains(name)
