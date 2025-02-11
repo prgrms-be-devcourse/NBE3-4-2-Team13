@@ -16,7 +16,6 @@ import { LoginMemberContext } from "@/stores/auth/LoginMember";
 function formatDateFromArray(dateData: any): string {
   if (dateData.length < 6) return "";
   const [year, month, day, hour, minute, second] = dateData;
-  // month, day, hour, minute, second를 두 자리 문자열로 변환
   const mm = String(month).padStart(2, "0");
   const dd = String(day).padStart(2, "0");
   const hh = String(hour).padStart(2, "0");
@@ -48,12 +47,10 @@ export default function CommentItem({
   const [showReplies, setShowReplies] = useState(false);
   const [replies, setReplies] = useState<Comment[]>([]);
   const [loadingReplies, setLoadingReplies] = useState(false);
-  const [replyEditMode, setReplyEditMode] = useState<{
-    [key: number]: boolean;
-  }>({});
-  const [replyEditedContent, setReplyEditedContent] = useState<{
-    [key: number]: string;
-  }>({});
+  const [replyEditMode, setReplyEditMode] = useState<{ [key: number]: boolean }>({});
+  const [replyEditedContent, setReplyEditedContent] = useState<{ [key: number]: string }>({});
+  // 별도 상태로 답글 개수를 관리 (초기값은 comment.replyCount)
+  const [replyCount, setReplyCount] = useState(comment.replyCount);
 
   // 댓글 수정 (일반 댓글)
   const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -86,7 +83,9 @@ export default function CommentItem({
       setLoadingReplies(true);
       try {
         const data = await getReplies(comment.id, token);
-        setReplies(data.content || data || []);
+        const loadedReplies = data.content || data || [];
+        setReplies(loadedReplies);
+        setReplyCount(loadedReplies.length);
       } catch (error) {
         console.error("답글 불러오기 오류:", error);
       } finally {
@@ -104,7 +103,9 @@ export default function CommentItem({
       await createReply(comment.id, replyContent, token);
       setReplyContent("");
       const data = await getReplies(comment.id, token);
-      setReplies(data.content || data || []);
+      const updatedReplies = data.content || data || [];
+      setReplies(updatedReplies);
+      setReplyCount(updatedReplies.length);
       setShowReplies(true);
       setShowReplyForm(false);
       onReplySubmit(comment.id, replyContent);
@@ -135,9 +136,11 @@ export default function CommentItem({
     if (confirm("정말 답글을 삭제하시겠습니까?")) {
       try {
         await deleteReply(replyId, token);
-        setReplies((prevReplies) =>
-          prevReplies.filter((r) => r.id !== replyId)
-        );
+        setReplies((prevReplies) => {
+          const newReplies = prevReplies.filter((r) => r.id !== replyId);
+          setReplyCount(newReplies.length);
+          return newReplies;
+        });
       } catch (error) {
         console.error("답글 삭제 오류:", error);
       }
@@ -158,10 +161,7 @@ export default function CommentItem({
                 className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none"
               />
               <div className="flex justify-end space-x-3">
-                <button
-                  type="submit"
-                  className="text-sm border px-3 py-1 rounded hover:bg-gray-100"
-                >
+                <button type="submit" className="text-sm border px-3 py-1 rounded hover:bg-gray-100">
                   저장
                 </button>
                 <button
@@ -177,8 +177,7 @@ export default function CommentItem({
             <p className="text-gray-800 text-sm">{comment.content}</p>
           )}
           <div className="text-gray-500 text-xs">
-            작성자: {comment.nickname} | 작성일:{" "}
-            {formatDateFromArray(comment.createdAt)}
+            작성자: {comment.nickname} | 작성일: {formatDateFromArray(comment.createdAt)}
           </div>
         </div>
 
@@ -204,23 +203,32 @@ export default function CommentItem({
             onClick={handleToggleReplies}
             className="text-xs border px-2 py-1 rounded hover:bg-gray-100"
           >
-            {showReplies ? "답글 닫기" : `답글 보기 (${comment.replyCount})`}
+            {showReplies ? "답글 닫기" : `답글 보기 (${replyCount})`}
           </button>
         </div>
       </div>
 
-      {/* 답글 작성 폼 (답글 보기 토글 시 함께 표시) */}
+      {/* 답글 작성 폼 및 목록 */}
       {showReplies && (
         <div className="mt-2 ml-4 space-y-2">
-          {/* 답글 목록 */}
+          <form onSubmit={handleReplySubmit} className="flex items-center space-x-2">
+            <input
+              type="text"
+              value={replyContent}
+              onChange={(e) => setReplyContent(e.target.value)}
+              placeholder="답글 입력..."
+              className="flex-1 px-2 py-1 border rounded text-xs"
+            />
+            <button type="submit" className="text-xs border px-2 py-1 rounded hover:bg-gray-100">
+              등록
+            </button>
+          </form>
+
           {loadingReplies ? (
             <p className="text-gray-500 text-xs">로딩 중...</p>
           ) : replies.length > 0 ? (
             replies.map((reply) => (
-              <div
-                key={reply.id}
-                className="border-b pb-1 flex justify-between"
-              >
+              <div key={reply.id} className="border-b pb-1 flex justify-between">
                 <div className="w-3/4">
                   {replyEditMode[reply.id] ? (
                     <div className="flex items-center space-x-2">
@@ -233,7 +241,7 @@ export default function CommentItem({
                             [reply.id]: e.target.value,
                           }))
                         }
-                        className="flex-1 px-2 py-1 border rounded text-xs" // w-full 대신 flex-1 사용
+                        className="flex-1 px-2 py-1 border rounded text-xs"
                       />
                       <button
                         onClick={() => handleReplyEditSubmit(reply.id)}
@@ -243,10 +251,7 @@ export default function CommentItem({
                       </button>
                       <button
                         onClick={() =>
-                          setReplyEditMode((prev) => ({
-                            ...prev,
-                            [reply.id]: false,
-                          }))
+                          setReplyEditMode((prev) => ({ ...prev, [reply.id]: false }))
                         }
                         className="text-xs border px-2 py-1 rounded hover:bg-gray-100"
                       >
@@ -257,61 +262,35 @@ export default function CommentItem({
                     <>
                       <p className="text-gray-800 text-xs">{reply.content}</p>
                       <div className="text-gray-500 text-[10px]">
-                        작성자: {reply.nickname} | 작성일:{" "}
-                        {formatDateFromArray(reply.createdAt)}
+                        작성자: {reply.nickname} | 작성일: {formatDateFromArray(reply.createdAt)}
                       </div>
                     </>
                   )}
                 </div>
-                {loginMember.id === reply.memberId &&
-                  !replyEditMode[reply.id] && (
-                    <div className="space-x-1">
-                      <button
-                        onClick={() => {
-                          setReplyEditMode((prev) => ({
-                            ...prev,
-                            [reply.id]: true,
-                          }));
-                          setReplyEditedContent((prev) => ({
-                            ...prev,
-                            [reply.id]: reply.content,
-                          }));
-                        }}
-                        className="text-xs border px-2 py-1 rounded hover:bg-gray-100"
-                      >
-                        수정
-                      </button>
-                      <button
-                        onClick={() => handleReplyDelete(reply.id)}
-                        className="text-xs border px-2 py-1 rounded hover:bg-gray-100"
-                      >
-                        삭제
-                      </button>
-                    </div>
-                  )}
+                {loginMember.id === reply.memberId && !replyEditMode[reply.id] && (
+                  <div className="space-x-1">
+                    <button
+                      onClick={() => {
+                        setReplyEditMode((prev) => ({ ...prev, [reply.id]: true }));
+                        setReplyEditedContent((prev) => ({ ...prev, [reply.id]: reply.content }));
+                      }}
+                      className="text-xs border px-2 py-1 rounded hover:bg-gray-100"
+                    >
+                      수정
+                    </button>
+                    <button
+                      onClick={() => handleReplyDelete(reply.id)}
+                      className="text-xs border px-2 py-1 rounded hover:bg-gray-100"
+                    >
+                      삭제
+                    </button>
+                  </div>
+                )}
               </div>
             ))
           ) : (
             <p className="text-gray-500 text-xs">답글이 없습니다.</p>
           )}
-          <form
-            onSubmit={handleReplySubmit}
-            className="flex items-center space-x-2"
-          >
-            <input
-              type="text"
-              value={replyContent}
-              onChange={(e) => setReplyContent(e.target.value)}
-              placeholder="답글 입력..."
-              className="flex-1 px-2 py-1 border rounded text-xs" // w-full 대신 flex-1 사용
-            />
-            <button
-              type="submit"
-              className="text-xs border px-2 py-1 rounded hover:bg-gray-100"
-            >
-              등록
-            </button>
-          </form>
         </div>
       )}
     </div>
