@@ -5,7 +5,7 @@ import { getComments } from "@/api/comment/commentApi";
 import { createComment } from "@/api/comment/commentApi";
 import { Comment } from "@/types/Comment";
 import CommentItem from "./CommentItem";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 interface CommentListProps {
   postId: number;
@@ -19,6 +19,7 @@ export default function CommentList({ postId }: CommentListProps) {
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState("");
+  const params = useParams();
 
   async function fetchComments() {
     setLoading(true);
@@ -45,7 +46,12 @@ export default function CommentList({ postId }: CommentListProps) {
       setNewComment("");
       fetchComments();
     } catch (error) {
-      console.error("댓글 작성 오류:", error);
+      if (error == "P001") {
+        alert("삭제된 게시글입니다")
+        router.back();
+      } else {
+        console.error("댓글 작성 오류:", error);
+      }
     }
   };
 
