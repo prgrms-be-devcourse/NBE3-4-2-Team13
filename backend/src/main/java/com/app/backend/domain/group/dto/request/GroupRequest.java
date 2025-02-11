@@ -104,6 +104,7 @@ public class GroupRequest {
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Search {
         private String categoryName;
+        private String recruitStatus;
         private String name;
         private String province;
         private String city;

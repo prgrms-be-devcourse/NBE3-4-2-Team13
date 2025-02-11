@@ -270,12 +270,13 @@ public class GroupService {
      * @return 모임 응답 DTO 목록(List)
      */
     public List<GroupResponse.ListInfo> getGroupsBySearch(@NotNull final GroupRequest.Search dto) {
-        return groupRepository.findAllByCategoryAndNameContainingAndRegion(dto.getCategoryName(),
-                                                                           dto.getName(),
-                                                                           dto.getProvince(),
-                                                                           dto.getCity(),
-                                                                           dto.getTown(),
-                                                                           false)
+        return groupRepository.findAllByCategoryAndRecruitStatusAndNameContainingAndRegion(dto.getCategoryName(),
+                                                                                           dto.getRecruitStatus(),
+                                                                                           dto.getName(),
+                                                                                           dto.getProvince(),
+                                                                                           dto.getCity(),
+                                                                                           dto.getTown(),
+                                                                                           false)
                               .stream()
                               .map(GroupResponse::toListInfo)
                               .toList();
@@ -290,13 +291,14 @@ public class GroupService {
      */
     public Page<GroupResponse.ListInfo> getGroupsBySearch(@NotNull final GroupRequest.Search dto,
                                                           @NotNull final Pageable pageable) {
-        return groupRepository.findAllByCategoryAndNameContainingAndRegion(dto.getCategoryName(),
-                                                                           dto.getName(),
-                                                                           dto.getProvince(),
-                                                                           dto.getCity(),
-                                                                           dto.getTown(),
-                                                                           false,
-                                                                           pageable)
+        return groupRepository.findAllByCategoryAndRecruitStatusAndNameContainingAndRegion(dto.getCategoryName(),
+                                                                                           dto.getRecruitStatus(),
+                                                                                           dto.getName(),
+                                                                                           dto.getProvince(),
+                                                                                           dto.getCity(),
+                                                                                           dto.getTown(),
+                                                                                           false,
+                                                                                           pageable)
                               .map(GroupResponse::toListInfo);
     }
 
