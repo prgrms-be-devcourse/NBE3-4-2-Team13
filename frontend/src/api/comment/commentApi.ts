@@ -8,7 +8,7 @@ export const getComments = async (
   try {
     const response = await api.get(`/comment/${postId}`, {
       headers: { Authorization: `Bearer ${token}` },
-      params: { page },
+      params: { page, sort: "createdAt,asc" },
     });
     return response.data.data;
   } catch (error: any) {
@@ -69,6 +69,7 @@ export const getReplies = async (
   try {
     const response = await api.get(`/comment/${commentId}/reply`, {
       headers: { Authorization: `Bearer ${token}` },
+      params: { sort: "createdAt,asc" },
     });
     return response.data.data;
   } catch (error: any) {
