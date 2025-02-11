@@ -81,7 +81,7 @@ public class DataInit {
             Category category = categoryRepository.findByNameAndDisabled(name, false).get();
 
             Member member = Member.builder()
-                                  .username("user".formatted(i))
+                                  .username("user%d".formatted(i))
                                   .password(passwordEncoder.encode("user%d".formatted(i)))
                                   .nickname("user%d".formatted(i))
                                   .role("ROLE_USER")
