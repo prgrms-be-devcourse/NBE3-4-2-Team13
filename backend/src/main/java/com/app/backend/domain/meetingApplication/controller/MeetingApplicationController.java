@@ -118,7 +118,7 @@ public class MeetingApplicationController {
         return ApiResponse.of(
                 true,
                 HttpStatus.OK,
-                "meeting application 조회 성공",
+                "meeting application 상세 조회 성공",
                 meetingApplicationService.getMeetingApplicationById(groupId,
                                                                     meetingApplicationId,
                                                                     memberDetails.getId())
