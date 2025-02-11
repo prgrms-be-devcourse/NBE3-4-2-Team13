@@ -3,7 +3,6 @@ package com.app.backend.domain.meetingApplication.entity;
 import com.app.backend.domain.group.entity.Group;
 import com.app.backend.domain.member.entity.Member;
 import com.app.backend.global.entity.BaseEntity;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -27,19 +26,25 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MeetingApplication extends BaseEntity {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "meeting_application_id", nullable = false)
-	private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "meeting_application_id", nullable = false)
+    private Long id;
 
-	@Column(columnDefinition = "TEXT", nullable = false)
-	private String context;
+    @Column(columnDefinition = "TEXT", nullable = false)
+    private String context;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "group_id", nullable = false)
-	private Group group;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "group_id", nullable = false)
+    private Group group;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "member_id", nullable = false)
-	private Member member;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
+
+    public MeetingApplication modifyContext(final String newContext) {
+        if (!context.equals(newContext))
+            context = newContext;
+        return this;
+    }
 }

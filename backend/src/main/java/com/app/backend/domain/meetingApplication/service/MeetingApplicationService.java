@@ -73,13 +73,16 @@ public class MeetingApplicationService {
                                                                                                          .build()
                                          ));
 
-        return meetingApplicationRepository.save(
-                MeetingApplication.builder()
-                                  .context(request.context())
-                                  .group(group)
-                                  .member(member)
-                                  .build()
-        );
+        return meetingApplicationRepository.findByGroup_IdAndMember_IdAndDisabled(groupId, memberId, false)
+                                           .orElseGet(() -> {
+                                               return meetingApplicationRepository.save(
+                                                       MeetingApplication.builder()
+                                                                         .context(request.context())
+                                                                         .group(group)
+                                                                         .member(member)
+                                                                         .build()
+                                               );
+                                           }).modifyContext(request.context());
     }
 
     // 리스트 조회
