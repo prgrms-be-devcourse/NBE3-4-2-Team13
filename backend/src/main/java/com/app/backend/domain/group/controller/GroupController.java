@@ -89,6 +89,7 @@ public class GroupController {
     ) {
         GroupRequest.Search requestDto = GroupRequest.Search.builder()
                                                             .categoryName(categoryName)
+                                                            .recruitStatus(recruitStatus)
                                                             .name(keyword)
                                                             .province(province)
                                                             .city(city)

@@ -12,7 +12,7 @@ public enum RecruitStatus {
 
     private boolean forceStatus;
 
-    RecruitStatus modifyForceStatus(final boolean newForceStatus) {
+    public RecruitStatus modifyForceStatus(final boolean newForceStatus) {
         if (forceStatus != newForceStatus)
             forceStatus = newForceStatus;
         return this;

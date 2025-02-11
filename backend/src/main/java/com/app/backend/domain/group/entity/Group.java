@@ -159,10 +159,8 @@ public class Group extends BaseEntity {
      * @return this
      */
     public Group modifyRecruitStatus(@NotNull final RecruitStatus newRecruitStatus) {
-        if (recruitStatus != newRecruitStatus) {
+        if (recruitStatus != newRecruitStatus)
             recruitStatus = newRecruitStatus;
-            recruitStatus.modifyForceStatus(newRecruitStatus == RecruitStatus.CLOSED);
-        }
         return this;
     }
 

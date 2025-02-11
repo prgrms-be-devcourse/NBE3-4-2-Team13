@@ -85,11 +85,13 @@ public class GroupMembershipService {
         //모임의 관리자 권한을 갖는 회원이 가입을 승인한 경우(isAccept = true)
         if (isAccept) {
             groupMembership.modifyStatus(MembershipStatus.APPROVED);
-
             if (group.getMaxRecruitCount() <= groupMembershipRepository.countByGroupIdAndStatusAndDisabled(groupId,
                                                                                                            MembershipStatus.APPROVED,
-                                                                                                           false))
-                group.modifyRecruitStatus(RecruitStatus.CLOSED);
+                                                                                                           false)) {
+                RecruitStatus closed = RecruitStatus.CLOSED;
+                closed.modifyForceStatus(false);
+                group.modifyRecruitStatus(closed);
+            }
 
             return true;
         }

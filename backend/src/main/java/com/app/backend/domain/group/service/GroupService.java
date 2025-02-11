@@ -337,10 +337,13 @@ public class GroupService {
                                                          CategoryErrorCode.CATEGORY_NOT_FOUND
                                                  ));
 
+        RecruitStatus newRecruitStatus = RecruitStatus.valueOf(dto.getRecruitStatus());
+        if (newRecruitStatus == RecruitStatus.CLOSED)
+            newRecruitStatus.modifyForceStatus(true);
         group.modifyName(dto.getName())
              .modifyRegion(dto.getProvince(), dto.getCity(), dto.getTown())
              .modifyDescription(dto.getDescription())
-             .modifyRecruitStatus(RecruitStatus.valueOf(dto.getRecruitStatus()))
+             .modifyRecruitStatus(newRecruitStatus)
              .modifyMaxRecruitCount(dto.getMaxRecruitCount())
              .modifyCategory(newCategory);
 
