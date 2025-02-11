@@ -77,6 +77,7 @@ public class GroupController {
                               empty = false)
     public ApiResponse<Page<GroupResponse.ListInfo>> getGroups(
             @RequestParam(required = false) final String categoryName,
+            @RequestParam(required = false) final String recruitStatus,
             @RequestParam(required = false) final String province,
             @RequestParam(required = false) final String city,
             @RequestParam(required = false) final String town,
