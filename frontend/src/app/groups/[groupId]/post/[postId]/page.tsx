@@ -36,7 +36,7 @@ function PostPage() {
         if (error && error == "GM001") {
           alert("접근권한이 없습니다");
         }
-        router.push(`/groups/${groupId}/post`);
+        router.back();
       } finally {
         setLoading(false);
       }
