@@ -34,7 +34,10 @@ public class GroupResponse {
                      .build();
     }
 
-    public static Detail toDetail(final Group group, final boolean isMember, final boolean isAdmin) {
+    public static Detail toDetail(final Group group,
+                                  final boolean isApplying,
+                                  final boolean isMember,
+                                  final boolean isAdmin) {
         return Detail.builder()
                      .id(group.getId())
                      .categoryName(group.getCategory().getName())
@@ -53,6 +56,7 @@ public class GroupResponse {
                                                                            && m.getGroupRole() == GroupRole.LEADER
                                                                            && !m.getDisabled())
                                         .map(m -> m.getMember().getNickname()).toList())
+                     .isApplying(isApplying)
                      .isMember(isMember)
                      .isAdmin(isAdmin)
                      .build();
@@ -94,6 +98,7 @@ public class GroupResponse {
         private final Integer      maxRecruitCount;
         private final Integer      currentMemberCount;
         private final String       createdAt;
+        private final Boolean      isApplying;
         private final Boolean      isMember;
         private final Boolean      isAdmin;
         private final List<String> groupLeaders;

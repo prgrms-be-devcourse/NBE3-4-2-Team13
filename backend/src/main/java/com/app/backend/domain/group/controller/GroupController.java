@@ -64,13 +64,7 @@ public class GroupController {
     @GetMapping("/{groupId}")
     public ApiResponse<GroupResponse.Detail> getGroupById(@PathVariable @Min(1) final Long groupId,
                                                           @Nullable @AuthenticationPrincipal final UserDetails userDetails) {
-        GroupResponse.Detail responseDto = null;
-
-        if (userDetails != null && groupMembershipService.isMember(groupId, ((MemberDetails) userDetails).getId()))
-            responseDto = groupService.getGroup(groupId, ((MemberDetails) userDetails).getId());
-        else
-            responseDto = groupService.getGroup(groupId);
-
+        GroupResponse.Detail responseDto = groupService.getGroup(groupId, ((MemberDetails) userDetails).getId());
         return ApiResponse.of(true, HttpStatus.OK, GroupMessageConstant.READ_GROUP_SUCCESS, responseDto);
     }
 

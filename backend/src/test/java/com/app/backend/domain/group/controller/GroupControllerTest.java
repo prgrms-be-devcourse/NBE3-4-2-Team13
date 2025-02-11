@@ -75,7 +75,7 @@ class GroupControllerTest extends WebMvcTestSupporter {
         responsePage = new PageImpl<>(List.of(GroupResponse.toListInfo(group)), PageRequest.of(0, 10), 1);
 
         when(groupService.createGroup(anyLong(), any(GroupRequest.Create.class))).thenReturn(1L);
-        when(groupService.getGroup(anyLong())).thenReturn(response);
+        when(groupService.getGroup(anyLong(), anyLong())).thenReturn(response);
         when(groupService.getGroupsBySearch(any(GroupRequest.Search.class), any(Pageable.class)))
                 .thenReturn(responsePage);
         when(groupService.modifyGroup(anyLong(), anyLong(), any(GroupRequest.Update.class))).thenReturn(response);

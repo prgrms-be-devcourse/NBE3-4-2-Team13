@@ -28,6 +28,7 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -118,20 +119,31 @@ public class GroupService {
      * @return 모임 응답 DTO
      */
     public GroupResponse.Detail getGroup(@NotNull @Min(1) final Long groupId, @NotNull @Min(1) final Long memberId) {
-        GroupMembership groupMembership = groupMembershipRepository.findByGroupIdAndMemberIdAndDisabled(groupId,
-                                                                                                        memberId,
-                                                                                                        false)
-                                                                   .orElseThrow(() -> new GroupMembershipException(
-                                                                           GroupMembershipErrorCode.GROUP_MEMBERSHIP_NOT_FOUND
-                                                                   ));
-        boolean isMember = false;
-        boolean isLeader = false;
-        if (groupMembership.getStatus() == MembershipStatus.APPROVED) {
-            isMember = true;
-            if (groupMembership.getGroupRole() == GroupRole.LEADER)
-                isLeader = true;
+        Optional<GroupMembership> opGroupMembership =
+                groupMembershipRepository.findByGroupIdAndMemberIdAndDisabled(groupId,
+                                                                              memberId,
+                                                                              false);
+        if (opGroupMembership.isPresent()) {
+            GroupMembership groupMembership = opGroupMembership.get();
+
+            boolean isApplying = false;
+            boolean isMember   = false;
+            boolean isLeader   = false;
+            if (groupMembership.getStatus() == MembershipStatus.PENDING)
+                isApplying = true;
+
+            if (groupMembership.getStatus() == MembershipStatus.APPROVED) {
+                isMember = true;
+                if (groupMembership.getGroupRole() == GroupRole.LEADER)
+                    isLeader = true;
+            }
+
+            return GroupResponse.toDetail(groupMembership.getGroup(), isApplying, isMember, isLeader);
         }
-        return GroupResponse.toDetail(groupMembership.getGroup(), isMember, isLeader);
+
+        return GroupResponse.toDetail(groupRepository.findByIdAndDisabled(groupId, false).orElseThrow(
+                () -> new GroupException(GroupErrorCode.GROUP_NOT_FOUND)
+        ));
     }
 
     /**

@@ -13,7 +13,6 @@ import com.app.backend.domain.group.repository.GroupMembershipRepository;
 import com.app.backend.domain.group.repository.GroupRepository;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -174,20 +173,6 @@ public class GroupMembershipService {
         groupMembership.modifyStatus(MembershipStatus.LEAVE);
 
         return true;
-    }
-
-    /**
-     * 모임(Group) 가입 여부 확인
-     *
-     * @param groupId  - 모임 ID
-     * @param memberId - 회원 ID
-     * @return 가입 여부
-     */
-    public boolean isMember(@NotNull @Min(1) final Long groupId, @NotNull @Min(1) final Long memberId) {
-        Optional<GroupMembership> opGroupMembership =
-                groupMembershipRepository.findByGroupIdAndMemberIdAndDisabled(groupId, memberId, false);
-        return opGroupMembership.filter(groupMembership -> groupMembership.getStatus() == MembershipStatus.APPROVED)
-                                .isPresent();
     }
 
 }
