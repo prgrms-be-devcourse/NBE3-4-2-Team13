@@ -19,6 +19,7 @@ interface GroupDetail {
   maxRecruitCount: number;
   currentMemberCount: number;
   createdAt: string;
+  isApplying: boolean;
   isMember: boolean;
   isAdmin: boolean;
   groupLeaders: string[];
@@ -310,6 +311,10 @@ export default function ClientPage({ groupId }: Props) {
                 </>
               )}
             </>
+          ) : group.isApplying === true ? (
+            <button disabled className='px-4 py-2 bg-gray-400 text-white rounded-md cursor-not-allowed'>
+              가입 신청 중
+            </button>
           ) : (
             <button
               onClick={handleJoinClick}
