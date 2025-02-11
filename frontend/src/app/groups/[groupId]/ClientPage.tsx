@@ -311,17 +311,29 @@ export default function ClientPage({ groupId }: Props) {
                 </>
               )}
             </>
-          ) : group.isApplying === true ? (
+          ) : group.isApplying ? (
             <button disabled className='px-4 py-2 bg-gray-400 text-white rounded-md cursor-not-allowed'>
               가입 신청 중
             </button>
           ) : (
-            <button
-              onClick={handleJoinClick}
-              className='px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors'
-            >
-              모임 가입
-            </button>
+            <div className='relative group'>
+              <button
+                onClick={handleJoinClick}
+                disabled={group.recruitStatus === 'CLOSED'}
+                className={`px-4 py-2 rounded-md transition-colors ${
+                  group.recruitStatus === 'CLOSED'
+                    ? 'bg-gray-400 text-white cursor-not-allowed'
+                    : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                }`}
+              >
+                모임 가입
+              </button>
+              {group.recruitStatus === 'CLOSED' && (
+                <div className='absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-800 text-white text-sm rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap'>
+                  모집 중이 아닙니다
+                </div>
+              )}
+            </div>
           )}
         </div>
 
