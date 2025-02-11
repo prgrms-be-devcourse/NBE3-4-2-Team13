@@ -96,6 +96,12 @@ public class GroupService {
                                                          .build();
         groupMembershipRepository.save(groupMembership);
 
+        int count = groupMembershipRepository.countByGroupIdAndStatusAndDisabled(group.getId(),
+                                                                                 MembershipStatus.APPROVED,
+                                                                                 false);
+        if (group.getMaxRecruitCount() <= count)
+            group.modifyRecruitStatus(RecruitStatus.CLOSED);
+
         return group.getId();
     }
 
