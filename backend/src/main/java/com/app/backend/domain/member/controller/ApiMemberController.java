@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -111,11 +112,11 @@ public class ApiMemberController {
 	}
 */
     @GetMapping("/mygroups")
-    public List<GroupMembershipResponse.Detail> getMyGroup(
+    public ApiResponse<List<GroupMembershipResponse.Detail>> getMyGroup(
             @RequestHeader(value = "Authorization") String token
     ) {
         List<GroupMembershipResponse.Detail> list = memberService.getMyGroup(token);
-        return list;
+        return ApiResponse.of(true, HttpStatus.OK, "모임 멤버십 조회에 성공했습니다.", list);
     }
 
     @Operation(summary = "개인정보 수정", description = "관리자 회원 정보를 수정합니다")
