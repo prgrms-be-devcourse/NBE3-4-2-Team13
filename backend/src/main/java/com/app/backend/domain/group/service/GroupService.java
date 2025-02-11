@@ -337,6 +337,11 @@ public class GroupService {
                                                          CategoryErrorCode.CATEGORY_NOT_FOUND
                                                  ));
 
+        if (dto.getMaxRecruitCount() < groupMembershipRepository.countByGroupIdAndStatusAndDisabled(groupId,
+                                                                                                    MembershipStatus.APPROVED,
+                                                                                                    false))
+            throw new GroupException(GroupErrorCode.GROUP_MAXIMUM_NUMBER_OF_MEMBERS);
+
         RecruitStatus newRecruitStatus = RecruitStatus.valueOf(dto.getRecruitStatus());
         if (newRecruitStatus == RecruitStatus.CLOSED)
             newRecruitStatus.modifyForceStatus(true);
