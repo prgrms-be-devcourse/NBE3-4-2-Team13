@@ -605,6 +605,7 @@ class GroupServiceTest extends SpringBootTestSupporter {
 
         GroupRequest.Search dto = GroupRequest.Search.builder()
                                                      .categoryName("category")
+                                                     .recruitStatus("RECRUITING")
                                                      .name("1")
                                                      .province("test province10")
                                                      .city("test city10")
@@ -666,6 +667,7 @@ class GroupServiceTest extends SpringBootTestSupporter {
         Pageable pageable = PageRequest.of(0, 10);
         GroupRequest.Search dto = GroupRequest.Search.builder()
                                                      .categoryName("category")
+                                                     .recruitStatus("RECRUITING")
                                                      .name("1")
                                                      .province("test province10")
                                                      .city("test city10")
