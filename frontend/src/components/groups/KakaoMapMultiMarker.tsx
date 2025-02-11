@@ -12,6 +12,7 @@ interface Location {
 
 interface KakaoMapMultiMarkerProps {
   locations: Location[];
+  onMarkerClick?: (groupId: number) => void;
 }
 
 interface GroupedLocation {
@@ -27,7 +28,7 @@ declare global {
   }
 }
 
-export default function KakaoMapMultiMarker({ locations }: KakaoMapMultiMarkerProps) {
+export default function KakaoMapMultiMarker({ locations, onMarkerClick }: KakaoMapMultiMarkerProps) {
   const mapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -72,58 +73,79 @@ export default function KakaoMapMultiMarker({ locations }: KakaoMapMultiMarkerPr
 
           bounds.extend(position);
 
-          // 커스텀 오버레이 콘텐츠
-          const content = `
-            <div class="custom-overlay bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg">
-              ${
-                location.groups.length === 1
-                  ? `<h3 class="font-bold text-gray-900 dark:text-white">${location.groups[0].name}</h3>`
-                  : `<h3 class="font-bold text-gray-900 dark:text-white">모임 ${location.groups.length}개</h3>`
-              }
-              <p class="text-sm text-gray-600 dark:text-gray-300">${location.address}</p>
-              ${
-                location.groups.length > 1
-                  ? `<div class="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                      ${location.groups.map((g) => g.name).join(', ')}
-                    </div>`
-                  : ''
-              }
-            </div>
-          `;
+          // 커스텀 오버레이용 div 엘리먼트 생성
+          const overlayContent = document.createElement('div');
+          overlayContent.className = 'custom-overlay bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg cursor-pointer';
+
+          const updateOverlayContent = (isZoomedIn: boolean) => {
+            if (isZoomedIn) {
+              overlayContent.innerHTML = `
+                <div class="space-y-2">
+                  ${location.groups
+                    .map(
+                      (g) => `
+                      <div class="group-item" data-group-id="${g.id}">
+                        <h3 class="font-bold text-gray-900 dark:text-white">${g.name}</h3>
+                      </div>
+                    `
+                    )
+                    .join('')}
+                </div>
+                <p class="text-sm text-gray-600 dark:text-gray-300 mt-2">${location.address}</p>
+              `;
+
+              // 각 모임 항목에 클릭 이벤트 추가
+              overlayContent.querySelectorAll('.group-item').forEach((element) => {
+                element.addEventListener('click', (e) => {
+                  e.stopPropagation();
+                  const groupId = parseInt(element.getAttribute('data-group-id') || '0');
+                  if (groupId && onMarkerClick) {
+                    onMarkerClick(groupId);
+                  }
+                });
+              });
+            } else {
+              overlayContent.innerHTML = `
+                <h3 class="font-bold text-gray-900 dark:text-white">
+                  ${location.groups.length === 1 ? location.groups[0].name : `모임 ${location.groups.length}개`}
+                </h3>
+                <p class="text-sm text-gray-600 dark:text-gray-300">${location.address}</p>
+                ${
+                  location.groups.length > 1
+                    ? `<div class="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                        ${location.groups.map((g) => g.name).join(', ')}
+                      </div>`
+                    : ''
+                }
+              `;
+            }
+          };
+
+          // 초기 컨텐츠 설정
+          updateOverlayContent(false);
+
+          // 오버레이에 클릭 이벤트 추가
+          overlayContent.addEventListener('click', () => {
+            if (location.groups.length === 1 && onMarkerClick) {
+              onMarkerClick(location.groups[0].id);
+            } else {
+              map.setCenter(position);
+              map.setLevel(3);
+            }
+          });
 
           // 커스텀 오버레이 생성
           const overlay = new window.kakao.maps.CustomOverlay({
             map: map,
             position: position,
-            content: content,
+            content: overlayContent,
             yAnchor: 1,
           });
 
           // 줌 레벨 변경 이벤트 리스너
           window.kakao.maps.event.addListener(map, 'zoom_changed', () => {
             const level = map.getLevel();
-            if (level < 5) {
-              // 줌인 상태에서는 모든 모임 이름 표시
-              overlay.setContent(`
-                <div class="custom-overlay bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg">
-                  <div class="space-y-2">
-                    ${location.groups
-                      .map(
-                        (g) => `
-                        <div>
-                          <h3 class="font-bold text-gray-900 dark:text-white">${g.name}</h3>
-                        </div>
-                      `
-                      )
-                      .join('')}
-                  </div>
-                  <p class="text-sm text-gray-600 dark:text-gray-300 mt-2">${location.address}</p>
-                </div>
-              `);
-            } else {
-              // 줌아웃 상태에서는 개수만 표시
-              overlay.setContent(content);
-            }
+            updateOverlayContent(level < 5);
           });
         });
 
@@ -148,7 +170,7 @@ export default function KakaoMapMultiMarker({ locations }: KakaoMapMultiMarkerPr
         document.head.removeChild(script);
       }
     };
-  }, [locations]);
+  }, [locations, onMarkerClick]);
 
   return <div ref={mapRef} className='w-full h-[400px] rounded-lg mb-6' />;
 }

@@ -59,10 +59,6 @@ public class GroupResponse {
     }
 
     public static ListInfo toListInfo(final Group group) {
-        List<String> nicknames = group.getMembers().stream().filter(m -> m.getStatus() == MembershipStatus.APPROVED
-                                                                         && m.getGroupRole() == GroupRole.LEADER
-                                                                         && !m.getDisabled())
-                                      .map(m -> m.getMember().getNickname()).toList();
         return ListInfo.builder()
                        .id(group.getId())
                        .categoryName(group.getCategory().getName())

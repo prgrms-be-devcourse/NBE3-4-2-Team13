@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import KakaoMap from '@/components/groups/KakaoMap';
 import { Button } from '@/components/ui/button';
 import DeleteConfirmModal from '@/components/groups/DeleteConfirmModal';
+import ConfirmModal from '@/components/common/ConfirmModal';
 
 interface GroupDetail {
   id: number;
@@ -46,6 +47,7 @@ export default function ClientPage({ groupId }: Props) {
   const [totalPages, setTotalPages] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
 
   console.log('GroupId received:', groupId);
 
@@ -121,6 +123,11 @@ export default function ClientPage({ groupId }: Props) {
         return;
       }
 
+      if (!group) {
+        setError('모임 정보를 불러올 수 없습니다.');
+        return;
+      }
+
       const response = await fetch(`http://localhost:8080/api/v1/groups/${groupId}/leave`, {
         method: 'DELETE',
         headers: {
@@ -131,13 +138,19 @@ export default function ClientPage({ groupId }: Props) {
         credentials: 'include',
       });
 
-      if (!response.ok) {
-        throw new Error('모임 탈퇴에 실패했습니다.');
+      const data = await response.json();
+      if (data.isSuccess) {
+        router.push('/groups');
+      } else {
+        setError(
+          group.isAdmin && group.groupLeaders.length === 1
+            ? '모임의 유일한 관리자는 탈퇴할 수 없습니다. 다른 회원에게 관리자 권한을 위임한 후 탈퇴해주세요.'
+            : '모임 탈퇴에 실패했습니다.'
+        );
       }
-
-      router.push('/groups');
     } catch (error) {
-      setError(error instanceof Error ? error.message : '모임 탈퇴 중 오류가 발생했습니다.');
+      console.error('Failed to leave group:', error);
+      setError('모임 탈퇴 중 오류가 발생했습니다.');
     }
   };
 
@@ -146,14 +159,23 @@ export default function ClientPage({ groupId }: Props) {
   };
 
   const handleEditClick = () => {
+    if (!group?.isAdmin) {
+      setError('관리자만 모임을 수정할 수 있습니다.');
+      return;
+    }
     router.push(`/groups/${groupId}/edit`);
   };
 
-  const handleDeleteClick = () => {
-    setShowDeleteModal(true);
-  };
+  const handleDeleteClick = async () => {
+    if (!group?.isAdmin) {
+      setError('관리자만 모임을 삭제할 수 있습니다.');
+      return;
+    }
 
-  const handleDeleteConfirm = async () => {
+    if (!window.confirm('정말로 이 모임을 삭제하시겠습니까?')) {
+      return;
+    }
+
     try {
       const token = localStorage.getItem('accessToken');
       if (!token) {
@@ -172,7 +194,8 @@ export default function ClientPage({ groupId }: Props) {
       });
 
       if (!response.ok) {
-        throw new Error('모임 삭제에 실패했습니다.');
+        const errorData = await response.json();
+        throw new Error(errorData.message || '모임 삭제에 실패했습니다.');
       }
 
       router.push('/groups');
@@ -190,7 +213,6 @@ export default function ClientPage({ groupId }: Props) {
       {/* 카카오맵 */}
       {coordinates && (
         <>
-          {/* 디버깅용 좌표 출력 */}
           <div className='hidden'>Coordinates: {JSON.stringify(coordinates)}</div>
           <KakaoMap
             latitude={coordinates.latitude}
@@ -215,42 +237,6 @@ export default function ClientPage({ groupId }: Props) {
                 생성일: {new Date(group.createdAt).toLocaleDateString()}
               </span>
             </div>
-          </div>
-          <div className='flex gap-2'>
-            {group.isMember && (
-              <button
-                onClick={handleLeaveGroup}
-                className='px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 transition-colors'
-              >
-                모임 탈퇴
-              </button>
-            )}
-
-            {group.isAdmin && (
-              <>
-                <button
-                  onClick={handleEditClick}
-                  className='px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors'
-                >
-                  모임 수정
-                </button>
-                <button
-                  onClick={handleDeleteClick}
-                  className='px-4 py-2 bg-rose-600 text-white rounded-md hover:bg-rose-700 transition-colors'
-                >
-                  모임 삭제
-                </button>
-              </>
-            )}
-
-            {!group.isMember && (
-              <button
-                onClick={handleJoinClick}
-                className='px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors'
-              >
-                모임 가입
-              </button>
-            )}
           </div>
         </div>
 
@@ -293,21 +279,44 @@ export default function ClientPage({ groupId }: Props) {
       {/* 하단 버튼 섹션 */}
       <div className='flex flex-col gap-4 md:flex-row md:justify-between items-center'>
         <div className='flex gap-4'>
-          {group?.isAdmin && (
+          {group.isMember ? (
             <>
               <button
-                onClick={() => router.push(`/groups/${groupId}/edit`)}
-                className='px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors'
+                onClick={() => setShowLeaveModal(true)}
+                className='px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 transition-colors'
               >
-                모임 수정
+                모임 탈퇴
               </button>
-              <button
-                onClick={handleDeleteClick}
-                className='px-4 py-2 bg-rose-600 text-white rounded-md hover:bg-rose-700 transition-colors'
-              >
-                모임 삭제
-              </button>
+              {group.isAdmin && (
+                <>
+                  <button
+                    onClick={() => router.push(`/groups/${groupId}/meeting_applications`)}
+                    className='px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors'
+                  >
+                    모임 관리
+                  </button>
+                  <button
+                    onClick={handleEditClick}
+                    className='px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors'
+                  >
+                    모임 수정
+                  </button>
+                  <button
+                    onClick={handleDeleteClick}
+                    className='px-4 py-2 bg-rose-600 text-white rounded-md hover:bg-rose-700 transition-colors'
+                  >
+                    모임 삭제
+                  </button>
+                </>
+              )}
             </>
+          ) : (
+            <button
+              onClick={handleJoinClick}
+              className='px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors'
+            >
+              모임 가입
+            </button>
           )}
         </div>
 
@@ -335,9 +344,22 @@ export default function ClientPage({ groupId }: Props) {
 
       {error && <div className='mt-4 p-4 bg-destructive/10 text-destructive rounded-md'>{error}</div>}
 
+      {/* 탈퇴 확인 모달 */}
+      {showLeaveModal && (
+        <ConfirmModal
+          title='모임 탈퇴'
+          message='정말로 이 모임을 탈퇴하시겠습니까?'
+          onConfirm={() => {
+            handleLeaveGroup();
+            setShowLeaveModal(false);
+          }}
+          onCancel={() => setShowLeaveModal(false)}
+        />
+      )}
+
       {/* 삭제 확인 모달 */}
       {showDeleteModal && (
-        <DeleteConfirmModal onClose={() => setShowDeleteModal(false)} onConfirm={handleDeleteConfirm} />
+        <DeleteConfirmModal onClose={() => setShowDeleteModal(false)} onConfirm={handleDeleteClick} />
       )}
     </div>
   );

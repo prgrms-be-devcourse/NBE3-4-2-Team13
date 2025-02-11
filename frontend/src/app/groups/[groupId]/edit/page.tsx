@@ -1,7 +1,21 @@
 'use client';
 
+import { use } from 'react';
 import ClientPage from './ClientPage';
+import RequireAuthenticated from '@/lib/auth/components/RequireAuthenticated';
 
-export default function Page({ params }: { params: { groupId: string } }) {
-  return <ClientPage groupId={params.groupId} />;
+interface Props {
+  params: Promise<{
+    groupId: string;
+  }>;
+}
+
+export default function GroupEditPage({ params }: Props) {
+  const resolvedParams = use(params);
+
+  return (
+    <RequireAuthenticated>
+      <ClientPage groupId={resolvedParams.groupId} />
+    </RequireAuthenticated>
+  );
 }
