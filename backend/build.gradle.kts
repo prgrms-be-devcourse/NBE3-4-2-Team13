@@ -43,6 +43,8 @@ dependencies {
     implementation("com.querydsl:querydsl-jpa:5.0.0:jakarta")
     //JJWT :: API
     implementation("io.jsonwebtoken:jjwt-api:0.12.6")
+    //Redisson/Spring Boot Starter
+    implementation("org.redisson:redisson-spring-boot-starter:3.45.0")
 
     compileOnly("org.projectlombok:lombok")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
@@ -92,11 +94,11 @@ sourceSets {
     }
 }
 
-tasks {
-    compileJava {
-        options.annotationProcessorGeneratedSourcesDirectory = generatedDir
-    }
+tasks.withType<JavaCompile>().configureEach {
+    options.generatedSourceOutputDirectory.set(generatedDir)
+}
 
+tasks {
     clean {
         doFirst {
             delete(generatedDir)
