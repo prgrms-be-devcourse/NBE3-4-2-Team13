@@ -1,11 +1,12 @@
 package com.app.backend.global.error.exception;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 
 @Getter
-@RequiredArgsConstructor
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public enum GlobalErrorCode implements DomainErrorCode {
 
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "GL001", "올바르지 않은 입력값"),
