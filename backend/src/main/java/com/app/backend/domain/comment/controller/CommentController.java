@@ -179,4 +179,20 @@ public class CommentController {
 			response
 		);
 	}
+
+	//댓글 좋아요
+	@PostMapping("/{id}/like")
+	public ApiResponse<Void> createCommentLike(@PathVariable(name = "id") Long commentId,
+		@AuthenticationPrincipal MemberDetails memberDetails) {
+
+		commentService.CommentLike(commentId, memberDetails.getId());
+
+		return ApiResponse.of(
+			true,
+			HttpStatus.OK,
+			"댓글 좋아요가 추가되었습니다."
+		);
+	}
+
+
 }
