@@ -23,6 +23,7 @@ import com.app.backend.domain.member.entity.Member;
 import com.app.backend.domain.member.exception.MemberErrorCode;
 import com.app.backend.domain.member.exception.MemberException;
 import com.app.backend.domain.member.repository.MemberRepository;
+import com.app.backend.global.annotation.CustomLock;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.validation.constraints.Min;
@@ -310,6 +311,7 @@ public class GroupService {
      * @param dto      - 모임(Group) 수정 요청 DTO
      * @return 모임 응답 DTO
      */
+    @CustomLock(key = "'group:' + #groupId")
     @Transactional
     public GroupResponse.Detail modifyGroup(@NotNull @Min(1) final Long groupId,
                                             @NotNull @Min(1) final Long memberId,
@@ -362,6 +364,7 @@ public class GroupService {
      * @param memberId - 회원 ID
      * @return 모임 비활성화(disabled) 여부
      */
+    @CustomLock(key = "'group:' + #groupId")
     @Transactional
     public boolean deleteGroup(@NotNull @Min(1) final Long groupId, @NotNull @Min(1) final Long memberId) {
         GroupMembership groupMembership = groupMembershipRepository.findByGroupIdAndMemberIdAndDisabled(groupId,
