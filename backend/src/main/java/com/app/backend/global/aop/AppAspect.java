@@ -1,8 +1,10 @@
 package com.app.backend.global.aop;
 
+import com.app.backend.global.annotation.CustomLock;
 import com.app.backend.global.annotation.CustomPageJsonSerializer;
 import com.app.backend.global.dto.response.ApiResponse;
 import com.app.backend.global.module.CustomPageModule;
+import com.app.backend.global.util.LockKeyGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -10,11 +12,15 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.lang.reflect.Method;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.data.domain.Page;
 
 @Slf4j
@@ -76,6 +82,48 @@ public class AppAspect {
                    annotation.isLast() + "_" +
                    annotation.sort() + "_" +
                    annotation.empty();
+        }
+
+    }
+
+    @Aspect
+    @RequiredArgsConstructor
+    public static class RedissonLockAspect {
+
+        private final RedissonClient redissonClient;
+
+        @Around("@annotation(com.app.backend.global.annotation.CustomLock)")
+        public Object execute(ProceedingJoinPoint joinPoint) throws Throwable {
+            MethodSignature signature  = (MethodSignature) joinPoint.getSignature();
+            Method          method     = signature.getMethod();
+            CustomLock      annotation = method.getAnnotation(CustomLock.class);
+
+            if (annotation == null)
+                return joinPoint.proceed();
+
+            String lockKey = LockKeyGenerator.generateLockKey(joinPoint, annotation.key());
+            log.info("LockKey: {}", lockKey);
+
+            RLock lock        = redissonClient.getLock(lockKey);
+            long  maxWaitTime = annotation.maxWaitTime();
+            long  leaseTime   = annotation.leaseTime();
+            long  baseDelay   = 100L;
+            long  elapsedTime = 0L;
+
+            while (elapsedTime < maxWaitTime) {
+                if (lock.tryLock(0, leaseTime, TimeUnit.MILLISECONDS))
+                    try {
+                        return joinPoint.proceed();
+                    } finally {
+                        lock.unlock();
+                    }
+
+                log.info("Lock acquisition failed, retrying after wait time: {}ms", baseDelay);
+                Thread.sleep(baseDelay);
+                elapsedTime += baseDelay;
+                baseDelay = Math.min(baseDelay * 2, maxWaitTime - elapsedTime);
+            }
+            throw new RuntimeException("Lock acquisition failed, max wait time exceeded");
         }
 
     }
