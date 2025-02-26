@@ -19,14 +19,15 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import java.util.ArrayList;
-import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "tbl_groups")
@@ -74,6 +75,12 @@ public class Group extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
     private Category category;  //카테고리
+
+    @OneToMany(mappedBy = "group")
+    private List<GroupLike> likes = new ArrayList<>(); // 좋아요 리스트
+
+    @Column
+    private int likeCount = 0; // 좋아요 수
 
     @Builder
     private Group(@NotNull final Long id,
@@ -194,6 +201,22 @@ public class Group extends BaseEntity {
     public void delete() {
         if (!this.getDisabled())
             deactivate();
+    }
+
+    /**
+     * 좋아요 수 증가
+     */
+    public void increaseLikeCount() {
+        this.likeCount++;
+    }
+
+    /**
+     * 좋아요 수 감소
+     */
+    public void decreaseLikeCount() {
+        if (this.likeCount > 0) {
+            this.likeCount--;
+        }
     }
 
 }
