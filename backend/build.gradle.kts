@@ -72,6 +72,9 @@ dependencies {
 
     // env 파일 사용 (카카오 보안 키)
     implementation("me.paulschwarz:spring-dotenv:4.0.0")
+
+    // kafka 의존성
+    implementation ("org.springframework.kafka:spring-kafka")
 }
 
 tasks.withType<Test> {

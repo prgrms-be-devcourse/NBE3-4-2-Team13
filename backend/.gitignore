@@ -213,4 +213,8 @@ gradle-app.setting
 bin/
 .vscode/
 
+# db 파일 제외
+/data/
+*.mv.db
+*.trace.db
 # End of https://www.toptal.com/developers/gitignore/api/windows,intellij,java,gradle
