@@ -28,6 +28,8 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.data.domain.Page;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 public class AppAspect {
@@ -139,7 +141,17 @@ public class AppAspect {
                     throw new RuntimeException("Lock acquisition failed, max wait time exceeded");
 
                 try {
-                    return joinPoint.proceed();
+                    Object result = joinPoint.proceed();
+                    TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            retryUnlockAsync(lock, 0);
+                        }
+                    });
+                    return result;
+                } catch (Exception e) {
+                    retryUnlockAsync(lock, 0);
+                    throw e;
                 } finally {
                     retryUnlockAsync(lock, 0);
                 }
@@ -150,7 +162,8 @@ public class AppAspect {
 
         private void retryUnlockAsync(final RLock lock, final int retryCount) {
             if (retryCount >= MAX_UNLOCK_RETRY_COUNT) {
-                log.error("Lock release failed after {} attempts", MAX_UNLOCK_RETRY_COUNT);
+                log.error("Lock release failed after {} attempts. Forcing unlock...", MAX_UNLOCK_RETRY_COUNT);
+                lock.forceUnlock();
                 return;
             }
 
