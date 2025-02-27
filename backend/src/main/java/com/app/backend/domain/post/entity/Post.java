@@ -1,14 +1,8 @@
 package com.app.backend.domain.post.entity;
 
-import com.app.backend.domain.comment.entity.Comment;
-import com.app.backend.domain.group.entity.Group;
-import com.app.backend.domain.member.entity.Member;
 import com.app.backend.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.util.List;
-
 
 @Entity
 @Getter
@@ -57,6 +51,23 @@ public class Post extends BaseEntity {
 //    @JoinColumn(name = "group_id")
 //    @ManyToOne(fetch = FetchType.LAZY)
 //    private Group group;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private Long todayViewCount = 0L;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private Long totalViewCount = 0L;
+
+    public void addTodayViewCount(Long viewCount) {
+        this.todayViewCount += viewCount;
+    }
+
+    public void refreshViewCount() {
+        totalViewCount += todayViewCount;
+        todayViewCount = 0L;
+    }
 
     public void delete(){
         if(!this.getDisabled()){
