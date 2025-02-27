@@ -24,9 +24,10 @@ import com.app.backend.domain.post.exception.PostErrorCode;
 import com.app.backend.domain.post.exception.PostException;
 import com.app.backend.domain.post.repository.post.PostRepository;
 import com.app.backend.domain.post.repository.postAttachment.PostAttachmentRepository;
+import com.app.backend.global.annotation.CustomCache;
+import com.app.backend.global.annotation.CustomCacheDelete;
 import com.app.backend.global.config.FileConfig;
 import com.app.backend.global.error.exception.GlobalErrorCode;
-import com.app.backend.global.redis.repository.RedisRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -47,23 +48,19 @@ public class PostService {
     private final FileConfig fileConfig;
     private final FileService fileService;
     private final PostRepository postRepository;
-    private final RedisRepository redisRepository;
     private final MemberRepository memberRepository;
     private final PostAttachmentRepository postAttachmentRepository;
     private final GroupMembershipRepository groupMembershipRepository;
 
+
     private final int MAX_FILE_SIZE = 10 * 1024 * 1024;
 
+    @CustomCache(prefix = "post", key = "postid", id = "postId", viewCount = true, viewCountTtl = 10, history = true)
     public PostRespDto.GetPostDto getPost(final Long postId, final Long memberId) {
-        String redisKey = "post:" + postId;
         Post post = getPostEntity(postId);
 
         if (!post.getPostStatus().equals(PostStatus.PUBLIC) && !getMemberShipEntity(post.getGroupId(), memberId).getStatus().equals(MembershipStatus.APPROVED)) {
             throw new PostException(PostErrorCode.POST_UNAUTHORIZATION);
-        }
-
-        if (redisRepository.isKeyExists(redisKey)) {
-            return (PostRespDto.GetPostDto) redisRepository.get(redisKey);
         }
 
         Member member = getMemberEntity(memberId);
@@ -80,13 +77,16 @@ public class PostService {
                 .map(file -> PostAttachmentRespDto.GetPostImage(file, fileConfig.getIMAGE_DIR()))
                 .toList();
 
-        PostRespDto.GetPostDto getPostDto = PostRespDto.toGetPost(post, member, images, documents);
-
-        redisRepository.save(redisKey, getPostDto, 5, TimeUnit.MINUTES);
-
-        return getPostDto;
+        return PostRespDto.toGetPost(post, member, images, documents);
     }
 
+    @CustomCache(prefix = "post", key = "groupid", id = "groupId", ttl = 2)
+    public List<PostRespDto.GetPostListDto> getTopFivePosts(final Long groupId) {
+        return postRepository
+                .findPostsByGroupIdOrderByTodayViewsCountDesc(groupId,5,false)
+                .stream()
+                .map(PostRespDto::toGetPostList).toList();
+    }
 
     public Page<PostRespDto.GetPostListDto> getPostsBySearch(final Long groupId, final String search, final PostStatus postStatus, final Pageable pageable) {
         return postRepository
@@ -113,7 +113,7 @@ public class PostService {
             throw new PostException(PostErrorCode.POST_UNAUTHORIZATION);
         }
         Member member = getMemberEntity(memberId);
-        Post post = postRepository.save(savePost.toEntity(memberId,member.getNickname()));
+        Post post = postRepository.save(savePost.toEntity(memberId, member.getNickname()));
 
         saveFiles(files, post);
 
@@ -122,8 +122,8 @@ public class PostService {
 
 
     @Transactional
+    @CustomCacheDelete(prefix = "post", key = "postid", id = "postId")
     public Post updatePost(final Long memberId, final Long postId, final PostReqDto.ModifyPostDto modifyPost, final MultipartFile[] files) {
-        String redisKey = "post:" + postId;
         GroupMembership membership = getMemberShipEntity(modifyPost.getGroupId(), memberId);
         Post post = getPostEntity(postId);
 
@@ -147,17 +147,13 @@ public class PostService {
             postAttachmentRepository.deleteByIdList(modifyPost.getRemoveIdList());
         }
 
-        if(redisRepository.isKeyExists(redisKey)) {
-            redisRepository.delete(redisKey);
-        }
-
         return post;
     }
 
 
     @Transactional
+    @CustomCacheDelete(prefix = "post", key = "postid", id = "postId")
     public void deletePost(final Long memberId, final Long postId) {
-        String redisKey = "post:" + postId;
         Post post = getPostEntity(postId);
         GroupMembership membership = getMemberShipEntity(post.getGroupId(), memberId);
 
@@ -167,10 +163,6 @@ public class PostService {
 
         if (!(post.getMemberId().equals(memberId) || membership.getGroupRole().equals(GroupRole.LEADER))) {
             throw new PostException(PostErrorCode.POST_UNAUTHORIZATION);
-        }
-
-        if(redisRepository.isKeyExists(redisKey)) {
-            redisRepository.delete(redisKey);
         }
 
         postAttachmentRepository.deleteByPostId(postId);
