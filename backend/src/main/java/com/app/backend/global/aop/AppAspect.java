@@ -9,9 +9,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import jakarta.annotation.PreDestroy;
 import java.lang.reflect.Method;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,8 +43,7 @@ public class AppAspect {
             Method          method    = signature.getMethod();
 
             CustomPageJsonSerializer annotation = method.getAnnotation(CustomPageJsonSerializer.class);
-            if (annotation == null)
-                return joinPoint.proceed();
+            if (annotation == null) return joinPoint.proceed();
 
             Object result = joinPoint.proceed();
 
@@ -58,9 +63,7 @@ public class AppAspect {
                     String   json     = objectMapper.writeValueAsString(body);
                     JsonNode jsonNode = objectMapper.readTree(json);
 
-                    return ApiResponse.of(apiResponse.getIsSuccess(),
-                                          apiResponse.getCode(),
-                                          apiResponse.getMessage(),
+                    return ApiResponse.of(apiResponse.getIsSuccess(), apiResponse.getCode(), apiResponse.getMessage(),
                                           jsonNode);
                 }
             }
@@ -69,18 +72,10 @@ public class AppAspect {
         }
 
         private String generateKey(CustomPageJsonSerializer annotation) {
-            return annotation.content() + "_" +
-                   annotation.hasContent() + "_" +
-                   annotation.totalPages() + "_" +
-                   annotation.totalElements() + "_" +
-                   annotation.numberOfElements() + "_" +
-                   annotation.size() + "_" +
-                   annotation.number() + "_" +
-                   annotation.hasPrevious() + "_" +
-                   annotation.hasNext() + "_" +
-                   annotation.isFirst() + "_" +
-                   annotation.isLast() + "_" +
-                   annotation.sort() + "_" +
+            return annotation.content() + "_" + annotation.hasContent() + "_" + annotation.totalPages() + "_" +
+                   annotation.totalElements() + "_" + annotation.numberOfElements() + "_" + annotation.size() + "_" +
+                   annotation.number() + "_" + annotation.hasPrevious() + "_" + annotation.hasNext() + "_" +
+                   annotation.isFirst() + "_" + annotation.isLast() + "_" + annotation.sort() + "_" +
                    annotation.empty();
         }
 
@@ -90,6 +85,12 @@ public class AppAspect {
     @RequiredArgsConstructor
     public static class RedissonLockAspect {
 
+        private final static int  MAX_UNLOCK_RETRY_COUNT = 3;
+        private final static long RETRY_DELAY            = 100;
+
+        private final ExecutorService          executorService = Executors.newFixedThreadPool(10);
+        private final ScheduledExecutorService scheduler       = Executors.newScheduledThreadPool(1);
+
         private final RedissonClient redissonClient;
 
         @Around("@annotation(com.app.backend.global.annotation.CustomLock)")
@@ -98,8 +99,7 @@ public class AppAspect {
             Method          method     = signature.getMethod();
             CustomLock      annotation = method.getAnnotation(CustomLock.class);
 
-            if (annotation == null)
-                return joinPoint.proceed();
+            if (annotation == null) return joinPoint.proceed();
 
             String lockKey = LockKeyGenerator.generateLockKey(joinPoint, annotation.key());
             log.info("LockKey: {}", lockKey);
@@ -107,23 +107,88 @@ public class AppAspect {
             RLock lock        = redissonClient.getLock(lockKey);
             long  maxWaitTime = annotation.maxWaitTime();
             long  leaseTime   = annotation.leaseTime();
-            long  baseDelay   = 100L;
-            long  elapsedTime = 0L;
 
-            while (elapsedTime < maxWaitTime) {
-                if (lock.tryLock(0, leaseTime, TimeUnit.MILLISECONDS))
-                    try {
-                        return joinPoint.proceed();
-                    } finally {
-                        lock.unlock();
+            try {
+                boolean lockAcquired = CompletableFuture.supplyAsync(() -> {
+                    long baseDelay   = 100L;
+                    long elapsedTime = 0L;
+
+                    while (elapsedTime < maxWaitTime) {
+                        try {
+                            if (lock.tryLock(0, leaseTime, TimeUnit.MILLISECONDS)) return true;
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            throw new RuntimeException("Lock acquisition interrupted", e);
+                        }
+
+                        log.info("Lock acquisition failed, retrying after wait time: {}ms", baseDelay);
+                        try {
+                            Thread.sleep(baseDelay);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            throw new RuntimeException("Retry sleep interrupted", e);
+                        }
+
+                        elapsedTime += baseDelay;
+                        baseDelay = Math.min(baseDelay * 2, maxWaitTime - elapsedTime);
                     }
+                    return false;
+                }, executorService).get();
 
-                log.info("Lock acquisition failed, retrying after wait time: {}ms", baseDelay);
-                Thread.sleep(baseDelay);
-                elapsedTime += baseDelay;
-                baseDelay = Math.min(baseDelay * 2, maxWaitTime - elapsedTime);
+                if (!lockAcquired)
+                    throw new RuntimeException("Lock acquisition failed, max wait time exceeded");
+
+                try {
+                    return joinPoint.proceed();
+                } finally {
+                    retryUnlockAsync(lock, 0);
+                }
+            } catch (ExecutionException e) {
+                throw e.getCause() instanceof RuntimeException ? e.getCause() : new RuntimeException(e.getCause());
             }
-            throw new RuntimeException("Lock acquisition failed, max wait time exceeded");
+        }
+
+        private void retryUnlockAsync(final RLock lock, final int retryCount) {
+            if (retryCount >= MAX_UNLOCK_RETRY_COUNT) {
+                log.error("Lock release failed after {} attempts", MAX_UNLOCK_RETRY_COUNT);
+                return;
+            }
+
+            lock.unlockAsync().whenComplete((unused, throwable) -> {
+                if (throwable != null) {
+                    log.warn("Lock release failed, retrying... (Attempt {}/{})",
+                             retryCount + 1,
+                             MAX_UNLOCK_RETRY_COUNT);
+                    scheduler.schedule(
+                            () -> retryUnlockAsync(lock, retryCount + 1), RETRY_DELAY, TimeUnit.MILLISECONDS
+                    );
+                } else
+                    log.info("Lock successfully released after {} attempt(s)", retryCount + 1);
+            });
+        }
+
+        @PreDestroy
+        private void shutdownExecutors() {
+            log.info("Shutting down executor services...");
+            executorService.shutdown();
+            scheduler.shutdown();
+
+            try {
+                if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
+                    log.warn("ExecutorService did not terminate in the specified time.");
+                    executorService.shutdownNow();
+                }
+                if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                    log.warn("ScheduledExecutorService did not terminate in the specified time.");
+                    scheduler.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                log.error("Shutdown interrupted", e);
+                executorService.shutdownNow();
+                scheduler.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+            log.info("Executor services shut down successfully");
         }
 
     }
