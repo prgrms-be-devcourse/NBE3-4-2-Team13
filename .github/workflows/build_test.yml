@@ -11,7 +11,11 @@ jobs:
         image: redis:latest
         ports:
           - 6379:6379
-          
+      redis-lock:
+        image: redis:latest
+        ports:
+          - 6380:6379
+
       # Zookeeper 서비스 추가
       zookeeper:
         image: confluentinc/cp-zookeeper:latest
@@ -55,12 +59,23 @@ jobs:
 
       - name: Build with Gradle
         working-directory: ./backend
-        run: ./gradlew clean build --stacktrace --info
+        run: ./gradlew clean build -x test --stacktrace --info
+
+      - name: Run Unit & Integration Tests (Excluding Concurrency Tests)
+        working-directory: ./backend
+        run: ./gradlew clean test -PexcludeTags=concurrency --no-build-cache --stacktrace --info
+
+      - name: Run Concurrency Tests
+        working-directory: ./backend
+        run: ./gradlew clean test -PincludeTags=concurrency --no-build-cache --stacktrace --info
 
       - name: Start Redis and configure
         run: |
-          docker exec $(docker ps -q --filter "ancestor=redis:latest") redis-cli CONFIG SET notify-keyspace-events Ex
-          docker exec $(docker ps -q --filter "ancestor=redis:latest") redis-cli CONFIG GET notify-keyspace-events
+          for container in $(docker ps -q --filter "ancestor=redis:latest"); do
+            echo "Configuring Redis for container: $container"
+            docker exec "$container" redis-cli CONFIG SET notify-keyspace-events Ex
+            docker exec "$container" redis-cli CONFIG GET notify-keyspace-events
+          done
 
       - name: Create file storage directory for tests
         working-directory: ./backend
