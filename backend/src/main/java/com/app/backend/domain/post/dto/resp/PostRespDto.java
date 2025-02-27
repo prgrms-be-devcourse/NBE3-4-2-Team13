@@ -67,6 +67,7 @@ public class PostRespDto {
         private final Long memberId;
         private final String nickName;
         private final String createdAt;
+        private final Long todayViewCount;
     }
 
     public static GetPostListDto toGetPostList(final Post post){
@@ -77,6 +78,7 @@ public class PostRespDto {
                 .memberId(post.getMemberId())
                 .nickName(post.getNickName())
                 .createdAt(AppUtil.localDateTimeToString(post.getCreatedAt()))
+                .todayViewCount(post.getTodayViewCount())
                 .build();
     }
 }
