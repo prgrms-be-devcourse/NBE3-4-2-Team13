@@ -86,6 +86,19 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
         return new PageImpl<>(posts, pageable, total);
     }
 
+    @Override
+    public List<Post> findPostsByGroupIdOrderByTodayViewsCountDesc(final Long groupId, final int limit, final boolean disabled) {
+        QPost post = QPost.post;
+
+        return jpaQueryFactory.selectFrom(post)
+                .where(post.groupId.eq(groupId),
+                        post.disabled.eq(disabled),
+                        post.todayViewCount.gt(0L))
+                .orderBy(post.todayViewCount.desc())
+                .limit(limit)
+                .fetch();
+    }
+
     private BooleanExpression searchKeywordContains(final QPost post, final String search) {
         return (search == null || search.isEmpty()) ? null : post.title.containsIgnoreCase(search);
     }
