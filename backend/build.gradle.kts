@@ -66,6 +66,7 @@ dependencies {
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
+    testImplementation("org.mockito:mockito-inline:5.2.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
     //test lombok
@@ -80,7 +81,13 @@ dependencies {
 }
 
 tasks.withType<Test> {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        val includeTags = project.findProperty("includeTags") as String?
+        val excludeTags = project.findProperty("excludeTags") as String?
+
+        includeTags?.split(",")?.forEach { tag -> includeTags(tag.trim()) }
+        excludeTags?.split(",")?.forEach { tag -> excludeTags(tag.trim()) }
+    }
 }
 
 //Querydsl - Start
