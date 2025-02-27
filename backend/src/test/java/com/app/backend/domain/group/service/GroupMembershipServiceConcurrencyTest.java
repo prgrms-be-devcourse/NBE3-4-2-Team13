@@ -22,33 +22,31 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.context.jdbc.Sql.ExecutionPhase;
+import org.springframework.test.context.jdbc.SqlGroup;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 
+@Tag("concurrency")
 @Slf4j
+@SqlGroup({
+        @Sql(executionPhase = ExecutionPhase.BEFORE_TEST_METHOD,
+             scripts = "classpath:/sql/truncate_tbl.sql"),
+        @Sql(executionPhase = ExecutionPhase.AFTER_TEST_METHOD,
+             scripts = "classpath:/sql/truncate_tbl.sql")
+})
 class GroupMembershipServiceConcurrencyTest extends SpringBootTestSupporter {
 
     private static final int THREAD_COUNT = 100;
 
     @Autowired
     private PlatformTransactionManager transactionManager;
-
-    @BeforeEach
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    void beforeEach() throws Exception {
-        meetingApplicationRepository.deleteAll();
-        groupMembershipRepository.deleteAll();
-        groupRepository.deleteAll();
-        memberRepository.deleteAll();
-        categoryRepository.deleteAll();
-    }
 
     @Test
     @DisplayName("[Normal] approveJoining(): 여러 클라이언트에서 동시에 같은 Group ID와 Member ID로 모임 신청 허가/거부 시도")
