@@ -13,8 +13,6 @@ import com.app.backend.domain.group.repository.GroupRepository;
 import com.app.backend.domain.member.entity.Member;
 import com.app.backend.domain.member.entity.Member.Provider;
 import com.app.backend.domain.member.repository.MemberRepository;
-import java.util.List;
-import java.util.Random;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Profile;
@@ -23,6 +21,9 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Random;
 
 @Profile("dev")
 @Component
@@ -40,14 +41,17 @@ public class DataInit {
     @EventListener(ApplicationReadyEvent.class)
     @Transactional
     void init() {
-        groupRepository.deleteAll();
-        categoryRepository.deleteAll();
-        memberRepository.deleteAll();
+        // 외래 키를 참조하는 테이블부터 순서대로 삭제
+        chatRoomRepository.deleteAll();          // 채팅방 먼저 삭제
+        groupMembershipRepository.deleteAll();    // 그룹 멤버십 삭제
+        groupRepository.deleteAll();             // 그룹 삭제
+        categoryRepository.deleteAll();          // 카테고리 삭제
+        memberRepository.deleteAll();            // 멤버 삭제
 
         Random random = new Random();
 
         try {
-            redisTemplate.getConnectionFactory().getConnection().flushDb();
+            redisTemplate.getConnectionFactory().getConnection().serverCommands();
         } catch (Exception e) {
             System.err.println("dev 모드 캐시 초기화 실패: " + e.getMessage());
         }

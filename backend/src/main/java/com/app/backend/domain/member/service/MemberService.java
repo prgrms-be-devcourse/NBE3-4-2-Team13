@@ -12,15 +12,16 @@ import com.app.backend.domain.member.exception.MemberErrorCode;
 import com.app.backend.domain.member.exception.MemberException;
 import com.app.backend.domain.member.jwt.JwtProvider;
 import com.app.backend.domain.member.repository.MemberRepository;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -148,7 +149,7 @@ public class MemberService {
     }
 
     @Transactional
-    @Scheduled(fixedRate = 60000) // 1분마다 실행
+    @Scheduled(fixedRate = 60000 * 30) // 30분마다 실행
     public void cleanupDisabledMembers() {
         log.info("비활성화된 회원 정보 삭제 작업 시작");
         LocalDateTime cutoffDate   = LocalDateTime.now().minusSeconds(30);
@@ -156,21 +157,6 @@ public class MemberService {
         log.info("삭제된 회원 수: {}", deletedCount);
     }
 
-    /*
-        public List<Group> getMyGroup(String token) {
-            return Optional.ofNullable(token)
-                .map(t -> t.startsWith("Bearer ") ? t.substring(7) : t)
-                .filter(jwtProvider::validateToken)
-                .map(validateToken -> {
-                    Long id = jwtProvider.getMemberId(validateToken);
-                    return groupMembershipRepository.findAllByMemberIdAndDisabled(id, false)
-                        .stream()
-                        .map(GroupMembership::getGroup)
-                        .toList();
-                })
-                .orElse(List.of());  // 토큰이 없거나 유효하지 않은 경우 빈 리스트 반환
-        }
-    */
     public List<GroupMembershipResponse.Detail> getMyGroup(String token) {
         return Optional.ofNullable(token)
                        .map(t -> t.startsWith("Bearer ") ? t.substring(7) : t)

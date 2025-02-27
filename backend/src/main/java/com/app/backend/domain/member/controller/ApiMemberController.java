@@ -16,19 +16,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
@@ -90,7 +84,6 @@ public class ApiMemberController {
     }
 
     @Operation(summary = "개인정보 조회", description = "JWT 토큰을 이용해 회원 정보를 조회합니다.")
-    // @Parameter(name = "Authorization", description = "Bearer JWT token", required = true, in = ParameterIn.HEADER)
     @GetMapping("/info")
     public ApiResponse<MemberDetails> getMemberInfo(
             @RequestHeader(value = "Authorization") String token
@@ -101,16 +94,6 @@ public class ApiMemberController {
         );
     }
 
-    // 소속된 그룹 조회
-/*
-	@GetMapping("/mygroups")
-	public List<Group> getMyGroup(
-		@RequestHeader(value = "Authorization") String token
-		) {
-		List<Group> list = memberService.getMyGroup(token);
-		return list;
-	}
-*/
     @GetMapping("/mygroups")
     public ApiResponse<List<GroupMembershipResponse.Detail>> getMyGroup(
             @RequestHeader(value = "Authorization") String token

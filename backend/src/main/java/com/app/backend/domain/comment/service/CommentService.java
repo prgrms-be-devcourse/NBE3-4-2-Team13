@@ -1,5 +1,7 @@
 package com.app.backend.domain.comment.service;
 
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -8,8 +10,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.app.backend.domain.comment.dto.request.CommentCreateRequest;
 import com.app.backend.domain.comment.dto.response.CommentResponse;
 import com.app.backend.domain.comment.entity.Comment;
+import com.app.backend.domain.comment.entity.CommentLike;
 import com.app.backend.domain.comment.exception.CommentErrorCode;
 import com.app.backend.domain.comment.exception.CommentException;
+import com.app.backend.domain.comment.repository.CommentLikeRepository;
 import com.app.backend.domain.comment.repository.CommentRepository;
 import com.app.backend.domain.member.entity.Member;
 import com.app.backend.domain.member.repository.MemberRepository;
@@ -28,6 +32,7 @@ public class CommentService {
 	private final CommentRepository commentRepository;
 	private final PostRepository postRepository;
 	private final MemberRepository memberRepository;
+	private final CommentLikeRepository commentLikeRepository;
 
 	//댓글 조회
 	private Comment getCommentValidate(Long id){
@@ -109,14 +114,10 @@ public class CommentService {
 
 	}
 
-	// 댓글 조회
+	// 댓글 조회 (좋아요 수 포함)
 	public Page<CommentResponse.CommentList> getComments(Long postId, Pageable pageable) {
-
 		Post post = getPostValidate(postId);
-
-		Page<Comment> comments = commentRepository.findByPostAndDisabledAndParentIsNull(post, false, pageable);
-
-		return comments.map(CommentResponse.CommentList::from);
+		return commentRepository.findCommentsWithLikeCount(post, pageable);
 	}
 
 
@@ -188,4 +189,30 @@ public class CommentService {
 
 		return replies.map(CommentResponse.ReplyList::from);
 	}
+
+	//댓글 좋아요
+	@Transactional
+	public void CommentLike(Long commentId, Long memberId) {
+
+		Comment comment = getCommentValidate(commentId);
+
+		Member member = memberRepository.findByIdAndDisabled(memberId, false)
+			.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+
+		//좋아요 확인
+		Optional<CommentLike> isLike = commentLikeRepository.findByCommentIdAndMemberIdAndDisabled(commentId, memberId, false);
+
+		if (isLike.isPresent()) {
+			isLike.get().delete(); //좋아요가 있으면 삭제
+		} else {
+			CommentLike commentLike = CommentLike.builder()
+				.comment(comment)
+				.member(member)
+				.build();
+
+			commentLikeRepository.save(commentLike);
+		}
+	}
+
 }

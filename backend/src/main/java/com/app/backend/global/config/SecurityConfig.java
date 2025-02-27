@@ -6,8 +6,6 @@ import com.app.backend.domain.member.oauth.OAuth2SuccessHandler;
 import com.app.backend.domain.member.service.CustomOAuth2UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -31,6 +29,9 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import java.io.IOException;
+import java.util.Arrays;
 
 @Configuration
 @EnableWebMvc
@@ -80,7 +81,8 @@ public class SecurityConfig {
                                 "/api/v1/members/**",
                                 "/images/**",
                                 "/ws/**",
-                                "/api/v1/proxy/kakao/**"
+                                "/api/v1/proxy/kakao/**",
+                                "/api/v1/notifications/**"
                         ).permitAll()
                         .anyRequest().authenticated())
                 .headers(headers -> headers

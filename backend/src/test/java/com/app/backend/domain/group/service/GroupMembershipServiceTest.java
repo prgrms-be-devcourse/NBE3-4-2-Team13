@@ -21,8 +21,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import com.app.backend.config.TestKafkaConfig;
 
+@SpringBootTest
 @Transactional
+@Import(TestKafkaConfig.class)
 class GroupMembershipServiceTest extends SpringBootTestSupporter {
 
     private Category category;

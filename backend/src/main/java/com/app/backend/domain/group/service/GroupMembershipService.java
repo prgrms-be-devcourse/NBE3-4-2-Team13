@@ -11,6 +11,8 @@ import com.app.backend.domain.group.exception.GroupMembershipErrorCode;
 import com.app.backend.domain.group.exception.GroupMembershipException;
 import com.app.backend.domain.group.repository.GroupMembershipRepository;
 import com.app.backend.domain.group.repository.GroupRepository;
+import com.app.backend.domain.notification.dto.NotificationEvent;
+import com.app.backend.domain.notification.service.NotificationService;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class GroupMembershipService {
-
+    private final NotificationService       notificationService;
     private final GroupMembershipRepository groupMembershipRepository;
     private final GroupRepository           groupRepository;
 
@@ -85,6 +87,14 @@ public class GroupMembershipService {
         //모임의 관리자 권한을 갖는 회원이 가입을 승인한 경우(isAccept = true)
         if (isAccept) {
             groupMembership.modifyStatus(MembershipStatus.APPROVED);
+            notificationService.sendNotification(
+                    memberId.toString(),
+                    "그룹 가입 승인",
+                    group.getName() + " 그룹 가입이 승인되었습니다",
+                    NotificationEvent.NotificationType.GROUP_INVITE,
+                    group.getId()
+            );
+
             if (group.getMaxRecruitCount() <= groupMembershipRepository.countByGroupIdAndStatusAndDisabled(groupId,
                                                                                                            MembershipStatus.APPROVED,
                                                                                                            false)) {

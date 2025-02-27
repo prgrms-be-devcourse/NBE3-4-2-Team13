@@ -19,6 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.app.backend.domain.comment.dto.request.CommentCreateRequest;
 import com.app.backend.domain.comment.entity.Comment;
+import com.app.backend.domain.comment.entity.CommentLike;
+import com.app.backend.domain.comment.repository.CommentLikeRepository;
 import com.app.backend.domain.comment.repository.CommentRepository;
 import com.app.backend.domain.member.entity.Member;
 import com.app.backend.domain.member.entity.MemberDetails;
@@ -45,6 +47,8 @@ public class CommentControllerTest {
 	private CommentRepository commentRepository;
 	@Autowired
 	private ObjectMapper objectMapper;
+	@Autowired
+	private CommentLikeRepository commentLikeRepository;
 
 	private Post testPost;
 	private Long testPostId;
@@ -423,6 +427,38 @@ public class CommentControllerTest {
 			.andExpect(jsonPath("$.data.content.length()").value(0))
 			.andExpect(jsonPath("$.data.totalElements").value(0))
 			.andExpect(jsonPath("$.data.totalPages").value(0));
+	}
+
+	@DisplayName("댓글 조회 (좋아요 수)")
+	@Test
+	@CustomWithMockUser(role="USER")
+	void getCommentsLike() throws Exception {
+
+		Comment testComment = Comment.builder()
+			.content("테스트 댓글")
+			.post(testPost)
+			.member(testMember)
+			.build();
+		commentRepository.save(testComment);
+
+		for (int i = 0; i < 3; i++) {
+			CommentLike like = CommentLike.builder()
+				.comment(testComment)
+				.member(testMember)
+				.build();
+			commentLikeRepository.save(like);
+		}
+
+
+		mvc.perform(get("/api/v1/comment/" + testPostId)
+				.param("page", "0")
+				.param("size", "10")
+				.param("sort", "createdAt,desc")
+				.contentType(MediaType.APPLICATION_JSON))
+
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.data.content[0].likeCount").value(3))
+			.andDo(print());
 	}
 
 }

@@ -18,8 +18,9 @@ public class CommentResponse {
 		private String nickname;
 		private LocalDateTime createdAt;
 		private int replyCount;
+		private long likeCount;
 
-		public static CommentList from(Comment comment) {
+		public static CommentList from(Comment comment, Long likeCount) {
 			return CommentList.builder()
 				.id(comment.getId())
 				.content(comment.getContent())
@@ -27,9 +28,11 @@ public class CommentResponse {
 				.nickname(comment.getMember().getNickname())
 				.createdAt(comment.getCreatedAt())
 				.replyCount(comment.getChildren().size())
+				.likeCount(likeCount)
 				.build();
 		}
 	}
+
 
 	@Getter
 	@Builder
@@ -107,4 +110,6 @@ public class CommentResponse {
 				.build();
 		}
 	}
+
 }
+
