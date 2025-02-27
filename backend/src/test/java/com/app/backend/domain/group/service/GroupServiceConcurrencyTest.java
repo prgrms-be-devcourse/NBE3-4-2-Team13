@@ -27,11 +27,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 
 @Slf4j
-@Transactional
 class GroupServiceConcurrencyTest extends SpringBootTestSupporter {
 
     private static final int THREAD_COUNT = 100;
@@ -40,21 +40,13 @@ class GroupServiceConcurrencyTest extends SpringBootTestSupporter {
     private PlatformTransactionManager transactionManager;
 
     @BeforeEach
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     void beforeEach() throws Exception {
-        Future<?> future = Executors.newFixedThreadPool(1).submit(() -> {
-            TransactionStatus transactionStatus = transactionManager.getTransaction(new DefaultTransactionDefinition());
-            try {
-                groupMembershipRepository.deleteAll();
-                groupRepository.deleteAll();
-                memberRepository.deleteAll();
-                categoryRepository.deleteAll();
-                transactionManager.commit(transactionStatus);
-            } catch (Exception e) {
-                transactionManager.rollback(transactionStatus);
-                throw e;
-            }
-        });
-        future.get();
+        meetingApplicationRepository.deleteAll();
+        groupMembershipRepository.deleteAll();
+        groupRepository.deleteAll();
+        memberRepository.deleteAll();
+        categoryRepository.deleteAll();
     }
 
     @Test

@@ -6,6 +6,7 @@ import com.app.backend.domain.group.repository.GroupMembershipRepository;
 import com.app.backend.domain.group.repository.GroupRepository;
 import com.app.backend.domain.group.service.GroupMembershipService;
 import com.app.backend.domain.group.service.GroupService;
+import com.app.backend.domain.meetingApplication.repository.MeetingApplicationRepository;
 import com.app.backend.domain.member.repository.MemberRepository;
 import jakarta.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,9 @@ public abstract class SpringBootTestSupporter {
 
     @Autowired
     protected CategoryRepository categoryRepository;
+
+    @Autowired
+    protected MeetingApplicationRepository meetingApplicationRepository;
 
     @Autowired
     protected GroupService groupService;
