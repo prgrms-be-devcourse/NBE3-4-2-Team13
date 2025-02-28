@@ -22,8 +22,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.jdbc.Sql.ExecutionPhase;
@@ -40,6 +43,7 @@ import org.springframework.transaction.support.DefaultTransactionDefinition;
         @Sql(executionPhase = ExecutionPhase.AFTER_TEST_METHOD,
              scripts = "classpath:/sql/truncate_tbl.sql")
 })
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class GroupServiceConcurrencyTest extends SpringBootTestSupporter {
 
     private static final int THREAD_COUNT = Math.min(10, Runtime.getRuntime().availableProcessors());
@@ -48,6 +52,7 @@ class GroupServiceConcurrencyTest extends SpringBootTestSupporter {
     private PlatformTransactionManager transactionManager;
 
     @Test
+    @Order(1)
     @DisplayName("[Normal] modifyGroup(): 여러 클라이언트에서 동시에 같은 ID로 모임 조회 후 값 수정 시도")
     void modifyGroup() throws Exception {
         //Given
@@ -137,7 +142,7 @@ class GroupServiceConcurrencyTest extends SpringBootTestSupporter {
                                                                     .categoryName(newCategoryName)
                                                                     .build();
 
-                    Thread.sleep(50);
+                    Thread.sleep(100);
                     groupService.modifyGroup(groupId, memberIds.get(threadIndex % memberIds.size()), update);
 
                     long acquireTimestamp = System.currentTimeMillis();
@@ -192,6 +197,7 @@ class GroupServiceConcurrencyTest extends SpringBootTestSupporter {
     }
 
     @Test
+    @Order(2)
     @DisplayName("[Normal] deleteGroup(): 여러 클라이언트에서 동시에 같은 ID로 모임 삭제 시도")
     void deleteGroup() throws Exception {
         //Given
@@ -262,7 +268,7 @@ class GroupServiceConcurrencyTest extends SpringBootTestSupporter {
             int threadIndex = i;
             executorService.execute(() -> {
                 try {
-                    Thread.sleep(50);
+                    Thread.sleep(100);
                     boolean flag = groupService.deleteGroup(groupId, memberIds.get(threadIndex % memberIds.size()));
 
                     long acquireTimestamp = System.currentTimeMillis();

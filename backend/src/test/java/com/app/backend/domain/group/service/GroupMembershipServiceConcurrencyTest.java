@@ -23,8 +23,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.jdbc.Sql.ExecutionPhase;
@@ -41,6 +44,7 @@ import org.springframework.transaction.support.DefaultTransactionDefinition;
         @Sql(executionPhase = ExecutionPhase.AFTER_TEST_METHOD,
              scripts = "classpath:/sql/truncate_tbl.sql")
 })
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class GroupMembershipServiceConcurrencyTest extends SpringBootTestSupporter {
 
     private static final int THREAD_COUNT = Math.min(10, Runtime.getRuntime().availableProcessors());
@@ -49,6 +53,7 @@ class GroupMembershipServiceConcurrencyTest extends SpringBootTestSupporter {
     private PlatformTransactionManager transactionManager;
 
     @Test
+    @Order(1)
     @DisplayName("[Normal] approveJoining(): 여러 클라이언트에서 동시에 같은 Group ID와 Member ID로 모임 신청 허가/거부 시도")
     void approveJoining() throws Exception {
         //Given
@@ -135,7 +140,7 @@ class GroupMembershipServiceConcurrencyTest extends SpringBootTestSupporter {
             int threadIndex = i;
             executorService.execute(() -> {
                 try {
-                    Thread.sleep(50);
+                    Thread.sleep(100);
                     boolean flag = groupMembershipService.approveJoining(leaderIds.get(threadIndex % leaderIds.size()),
                                                                          groupId,
                                                                          memberId,
@@ -187,6 +192,7 @@ class GroupMembershipServiceConcurrencyTest extends SpringBootTestSupporter {
     }
 
     @Test
+    @Order(2)
     @DisplayName("[Normal] modifyGroupRole(): 여러 클라이언트에서 동시에 같은 Group ID와 Member ID로 모임 내 회원 권한 변경 시도")
     void modifyGroupRole() throws Exception {
         //Given+
@@ -274,7 +280,7 @@ class GroupMembershipServiceConcurrencyTest extends SpringBootTestSupporter {
             int threadIndex = i;
             executorService.execute(() -> {
                 try {
-                    Thread.sleep(50);
+                    Thread.sleep(100);
                     groupMembershipService.modifyGroupRole(leaderIds.get(threadIndex % leaderIds.size()),
                                                            groupId,
                                                            memberId);
@@ -320,6 +326,7 @@ class GroupMembershipServiceConcurrencyTest extends SpringBootTestSupporter {
     }
 
     @Test
+    @Order(3)
     @DisplayName("[Normal] leaveGroup(): 여러 클라이언트에서 동시에 같은 Group ID와 Member ID로 모임 탈퇴 시도")
     void leaveGroup() throws Exception {
         //Given
@@ -398,7 +405,7 @@ class GroupMembershipServiceConcurrencyTest extends SpringBootTestSupporter {
             int threadIndex = i;
             executorService.execute(() -> {
                 try {
-                    Thread.sleep(50);
+                    Thread.sleep(100);
                     boolean flag = groupMembershipService.leaveGroup(groupId, memberId);
 
                     long acquireTimestamp = System.currentTimeMillis();
