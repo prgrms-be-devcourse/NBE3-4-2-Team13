@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.annotation.PreDestroy;
 import java.lang.reflect.Method;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -99,8 +100,8 @@ public class AppAspect {
         private final ExecutorService          executorService = Executors.newFixedThreadPool(10);
         private final ScheduledExecutorService scheduler       = Executors.newScheduledThreadPool(1);
 
-        private final RedissonClient   redissonClient;
-        private final LocalLockManager localLockManager;
+        private final Optional<RedissonClient> redissonClient;
+        private final LocalLockManager         localLockManager;
 
         @Around("@annotation(customLock)")
         public Object execute(ProceedingJoinPoint joinPoint, CustomLock customLock) throws Throwable {
@@ -128,7 +129,7 @@ public class AppAspect {
         private LockWrapper acquireLock(final String lockKey, final long maxWaitTime, final long leaseTime) {
             boolean isRedisAvailable = isRedisRunning();
 
-            RLock         redisLock = isRedisAvailable ? redissonClient.getLock(lockKey) : null;
+            RLock         redisLock = isRedisAvailable ? redissonClient.get().getLock(lockKey) : null;
             ReentrantLock localLock = isRedisAvailable ? null : localLockManager.getLock(lockKey);
 
             boolean locked = isRedisAvailable
@@ -139,13 +140,15 @@ public class AppAspect {
         }
 
         private boolean isRedisRunning() {
-            try {
-                redissonClient.getKeys().count();
-                return true;
-            } catch (RedisConnectionException e) {
-                log.warn("Redis server is not available. Switching to local lock", e);
-                return false;
-            }
+            return redissonClient.map(client -> {
+                try {
+                    client.getKeys().count();
+                    return true;
+                } catch (RedisConnectionException e) {
+                    log.warn("Redis server is not available. Switching to local lock", e);
+                    return false;
+                }
+            }).orElse(false);
         }
 
         private boolean tryRedissonLock(final RLock lock, final long maxWaitTime, final long leaseTime) {
