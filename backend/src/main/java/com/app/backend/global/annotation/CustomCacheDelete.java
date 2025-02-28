@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface CustomCacheDelete {
 
-    String prefix() default "";
+    String prefix() default "global";
 
     String key() default "";
 
