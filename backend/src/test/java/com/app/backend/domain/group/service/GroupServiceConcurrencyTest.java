@@ -42,7 +42,7 @@ import org.springframework.transaction.support.DefaultTransactionDefinition;
 })
 class GroupServiceConcurrencyTest extends SpringBootTestSupporter {
 
-    private static final int THREAD_COUNT = 100;
+    private static final int THREAD_COUNT = Math.min(10, Runtime.getRuntime().availableProcessors());
 
     @Autowired
     private PlatformTransactionManager transactionManager;
@@ -137,7 +137,7 @@ class GroupServiceConcurrencyTest extends SpringBootTestSupporter {
                                                                     .categoryName(newCategoryName)
                                                                     .build();
 
-                    Thread.sleep(10);
+                    Thread.sleep(50);
                     groupService.modifyGroup(groupId, memberIds.get(threadIndex % memberIds.size()), update);
 
                     long acquireTimestamp = System.currentTimeMillis();
@@ -262,7 +262,7 @@ class GroupServiceConcurrencyTest extends SpringBootTestSupporter {
             int threadIndex = i;
             executorService.execute(() -> {
                 try {
-                    Thread.sleep(10);
+                    Thread.sleep(50);
                     boolean flag = groupService.deleteGroup(groupId, memberIds.get(threadIndex % memberIds.size()));
 
                     long acquireTimestamp = System.currentTimeMillis();

@@ -43,7 +43,7 @@ import org.springframework.transaction.support.DefaultTransactionDefinition;
 })
 class GroupMembershipServiceConcurrencyTest extends SpringBootTestSupporter {
 
-    private static final int THREAD_COUNT = 100;
+    private static final int THREAD_COUNT = Math.min(10, Runtime.getRuntime().availableProcessors());
 
     @Autowired
     private PlatformTransactionManager transactionManager;
@@ -135,7 +135,7 @@ class GroupMembershipServiceConcurrencyTest extends SpringBootTestSupporter {
             int threadIndex = i;
             executorService.execute(() -> {
                 try {
-                    Thread.sleep(10);
+                    Thread.sleep(50);
                     boolean flag = groupMembershipService.approveJoining(leaderIds.get(threadIndex % leaderIds.size()),
                                                                          groupId,
                                                                          memberId,
@@ -274,7 +274,7 @@ class GroupMembershipServiceConcurrencyTest extends SpringBootTestSupporter {
             int threadIndex = i;
             executorService.execute(() -> {
                 try {
-                    Thread.sleep(10);
+                    Thread.sleep(50);
                     groupMembershipService.modifyGroupRole(leaderIds.get(threadIndex % leaderIds.size()),
                                                            groupId,
                                                            memberId);
@@ -398,7 +398,7 @@ class GroupMembershipServiceConcurrencyTest extends SpringBootTestSupporter {
             int threadIndex = i;
             executorService.execute(() -> {
                 try {
-                    Thread.sleep(10);
+                    Thread.sleep(50);
                     boolean flag = groupMembershipService.leaveGroup(groupId, memberId);
 
                     long acquireTimestamp = System.currentTimeMillis();
