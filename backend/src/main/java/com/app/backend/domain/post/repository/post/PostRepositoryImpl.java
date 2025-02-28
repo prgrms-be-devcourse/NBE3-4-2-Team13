@@ -18,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -98,6 +99,17 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
                 .limit(limit)
                 .fetch();
     }
+
+    @Override
+    public void deleteAllByModifiedAtAndDisabled(final LocalDateTime lastModified, final boolean disabled) {
+        QPost post = QPost.post;
+        jpaQueryFactory
+                .delete(post)
+                .where(post.disabled.eq(disabled),
+                        post.modifiedAt.loe(lastModified))
+                .execute();
+    }
+
 
     private BooleanExpression searchKeywordContains(final QPost post, final String search) {
         return (search == null || search.isEmpty()) ? null : post.title.containsIgnoreCase(search);
