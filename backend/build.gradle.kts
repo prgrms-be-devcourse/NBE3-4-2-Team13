@@ -45,6 +45,8 @@ dependencies {
     implementation("io.jsonwebtoken:jjwt-api:0.12.6")
     //Redisson/Spring Boot Starter
     implementation("org.redisson:redisson-spring-boot-starter:3.45.0")
+    //Jedis
+    implementation("redis.clients:jedis")
 
     compileOnly("org.projectlombok:lombok")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
@@ -77,7 +79,7 @@ dependencies {
     implementation("me.paulschwarz:spring-dotenv:4.0.0")
 
     // kafka 의존성
-    implementation ("org.springframework.kafka:spring-kafka")
+    implementation("org.springframework.kafka:spring-kafka")
 }
 
 tasks.withType<Test> {
