@@ -12,13 +12,9 @@ import java.util.Optional;
 
 public interface GroupLikeRepository extends JpaRepository<GroupLike, Long> {
 
-    @Query("SELECT gl FROM GroupLike gl WHERE gl.group = :group AND gl.member = :member")
-    Optional<GroupLike> findByGroupAndMemberWithLock(Group group, Member member);
-
     long countByGroupIdAndMemberId(Long groupId, Long memberId);
 
-    long countByGroupId(Long groupId);
-
     @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT gl FROM GroupLike gl WHERE gl.group = :group AND gl.member = :member")
     Optional<GroupLike> findByGroupAndMember(Group group, Member member);
 }

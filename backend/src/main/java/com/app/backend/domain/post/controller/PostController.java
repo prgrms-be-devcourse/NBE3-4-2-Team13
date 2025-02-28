@@ -22,6 +22,8 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/post")
@@ -52,6 +54,15 @@ public class PostController {
         Page<PostRespDto.GetPostListDto> posts = postService.getPostsBySearch(groupId, search, postStatus, pageable);
 
         return ApiResponse.of(true, HttpStatus.OK, "게시물 목록을 성공적으로 불러왔습니다", posts);
+    }
+
+    @GetMapping("/hot")
+    public ApiResponse<?> getHotPosts(
+            @RequestParam final Long groupId
+    ) {
+        List<PostRespDto.GetPostListDto> posts = postService.getTopFivePosts(groupId);
+
+        return ApiResponse.of(true, HttpStatus.OK, "인기 게시물 목록을 성곡적으로 불러왔습니다", posts);
     }
 
     @PostMapping

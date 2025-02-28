@@ -50,9 +50,9 @@ public class RedisConfig {
         mapper.registerModule(new JavaTimeModule());
 
         PolymorphicTypeValidator ptv = BasicPolymorphicTypeValidator.builder()
-                                                                    .allowIfBaseType(Object.class)
-                                                                    .build();
-        mapper.activateDefaultTyping(ptv, ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
+            .allowIfBaseType(Object.class)
+            .build();
+        mapper.activateDefaultTyping(ptv, ObjectMapper.DefaultTyping.EVERYTHING, JsonTypeInfo.As.PROPERTY);
 
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory());

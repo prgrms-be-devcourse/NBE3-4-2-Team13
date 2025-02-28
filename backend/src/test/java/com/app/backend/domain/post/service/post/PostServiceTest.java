@@ -16,9 +16,10 @@ import com.app.backend.domain.post.exception.PostErrorCode;
 import com.app.backend.domain.post.exception.PostException;
 import com.app.backend.domain.post.repository.post.PostRepository;
 import com.app.backend.domain.post.repository.postAttachment.PostAttachmentRepository;
+import com.app.backend.domain.post.service.scheduler.PostScheduler;
+import com.app.backend.global.annotation.CustomWithMockUser;
 import com.app.backend.global.error.exception.DomainException;
 import com.app.backend.global.error.exception.GlobalErrorCode;
-import com.app.backend.global.redis.repository.RedisRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +39,7 @@ import java.io.File;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
@@ -53,6 +56,9 @@ public class PostServiceTest {
     private PostService postService;
 
     @Autowired
+    private PostScheduler postScheduler;
+
+    @Autowired
     private PostRepository postRepository;
 
     @Autowired
@@ -62,7 +68,7 @@ public class PostServiceTest {
     private MemberRepository memberRepository;
 
     @Autowired
-    private RedisRepository redisRepository;
+    private RedisTemplate<String, Object> redisTemplate;
 
     @Autowired
     private PostAttachmentRepository postAttachmentRepository;
@@ -90,7 +96,9 @@ public class PostServiceTest {
         em.createNativeQuery("ALTER TABLE tbl_members ALTER COLUMN member_id RESTART WITH 1").executeUpdate();
         em.createNativeQuery("ALTER TABLE tbl_groups ALTER COLUMN group_id RESTART WITH 1").executeUpdate();
         em.createNativeQuery("ALTER TABLE tbl_post_attachments ALTER COLUMN attachment_id RESTART WITH 1").executeUpdate();
-        redisRepository.delete("post:1");
+        redisTemplate.delete("post:postid:1");
+        redisTemplate.delete("post:postid:1:user:1");
+        redisTemplate.delete("viewCount:post:postid:1");
     }
 
     private void dataSetting() {
@@ -364,6 +372,7 @@ public class PostServiceTest {
 
     @Test
     @DisplayName("Success : 게시글 수정 - document, image 분류 검증")
+    @CustomWithMockUser(username = "Test member1", nickname = "Test Nickname 1")
     void updatePost_Success4() {
         // Given
         MultipartFile[] files = {
@@ -400,6 +409,7 @@ public class PostServiceTest {
 
     @Test
     @DisplayName("Success : 게시글 수정 - redis")
+    @CustomWithMockUser(username = "Test member1", nickname = "Test Nickname 1")
     void updatePost_Success5() {
         // Given
         MultipartFile[] files = {
@@ -415,7 +425,7 @@ public class PostServiceTest {
         postService.getPost(1L, 1L);
 
         // Then1
-        assertTrue(redisRepository.isKeyExists("post:1"));
+        assertTrue(redisTemplate.hasKey("post:postid:1"));
 
         // When2
         MultipartFile[] newFiles = {
@@ -431,7 +441,7 @@ public class PostServiceTest {
         Post updatedPost = postService.updatePost(1L, 1L, modifyPostDto, newFiles);
 
         // Then2
-        assertFalse(redisRepository.isKeyExists("post:1"));
+        assertFalse(redisTemplate.hasKey("post:postid:1"));
     }
 
     @Test
@@ -701,6 +711,7 @@ public class PostServiceTest {
 
     @Test
     @DisplayName("Success : 게시물 삭제 - redis")
+    @CustomWithMockUser(username = "Test member1", nickname = "Test Nickname 1")
     public void deletePost_Success4() {
         // Given
         MultipartFile[] files = {
@@ -716,13 +727,13 @@ public class PostServiceTest {
         postService.getPost(1L, 1L);
 
         // Then1
-        assertTrue(redisRepository.isKeyExists("post:1"));
+        assertTrue(redisTemplate.hasKey("post:postid:1"));
 
         // When2
         postService.deletePost(1L, 1L);
 
         // Then2
-        assertFalse(redisRepository.isKeyExists("post:1"));
+        assertFalse(redisTemplate.hasKey("post:postid:1"));
     }
 
     @Test
@@ -863,6 +874,7 @@ public class PostServiceTest {
 
     @Test
     @DisplayName("Success : 게시글 불러오기")
+    @CustomWithMockUser(username = "Test member1", nickname = "Test Nickname 1")
     void getPost_Success1() {
         // Given
         MultipartFile[] files = {
@@ -889,6 +901,7 @@ public class PostServiceTest {
 
     @Test
     @DisplayName("Success : 게시글 불러오기 - redis 조회기능")
+    @CustomWithMockUser(username = "Test member1", nickname = "Test Nickname 1")
     void getPost_Success2() {
         // Given
         MultipartFile[] files = {
@@ -905,7 +918,7 @@ public class PostServiceTest {
         PostRespDto.GetPostDto respDto = postService.getPost(1L, 1L);
 
         // Then
-        PostRespDto.GetPostDto dto = (PostRespDto.GetPostDto) redisRepository.get("post:1");
+        PostRespDto.GetPostDto dto = (PostRespDto.GetPostDto) redisTemplate.opsForValue().get("post:postid:1");
 
         assertEquals(savedPost.getId(), dto.getPostId());
         assertEquals(savedPost.getTitle(), dto.getTitle());
@@ -918,6 +931,7 @@ public class PostServiceTest {
 
     @Test
     @DisplayName("Success : 게시글 불러오기 - fileType 분류")
+    @CustomWithMockUser(username = "Test member1", nickname = "Test Nickname 1")
     void getPost_Success3() {
         // Given
         MultipartFile[] files = {
@@ -946,6 +960,7 @@ public class PostServiceTest {
 
     @Test
     @DisplayName("Success : 게시글 불러오기 - MembershipStatus.APPROVED")
+    @CustomWithMockUser(id = 2L, username = "Test member1", nickname = "Test Nickname 1")
     void getPost_Success4() {
         // Given
         GroupMembership approvedMembership = groupMembershipRepository.findByGroupIdAndMemberId(1L, 2L).get();
@@ -978,6 +993,7 @@ public class PostServiceTest {
 
     @Test
     @DisplayName("Fail : 게시글 불러오기 - MembershipStatus.PENDING")
+    @CustomWithMockUser(id = 2L, username = "Test member2", nickname = "Test Nickname 2")
     void getPost_Fail1() {
         // Given
         MultipartFile[] files = {
@@ -999,6 +1015,7 @@ public class PostServiceTest {
 
     @Test
     @DisplayName("Fail : 게시글 불러오기 - MembershipStatus.REJECTED")
+    @CustomWithMockUser(id = 2L, username = "Test member2", nickname = "Test Nickname 2")
     void getPost_Fail2() {
         // Given
         GroupMembership approvedMembership = groupMembershipRepository.findByGroupIdAndMemberId(1L, 2L).get();
@@ -1026,6 +1043,7 @@ public class PostServiceTest {
 
     @Test
     @DisplayName("Fail : 게시글 불러오기 - MembershipStatus.LEAVE")
+    @CustomWithMockUser(id = 2L, username = "Test member 2", nickname = "Test Nickname 2")
     void getPost_Fail3() {
         // Given
         GroupMembership approvedMembership = groupMembershipRepository.findByGroupIdAndMemberId(1L, 2L).get();
@@ -1053,6 +1071,7 @@ public class PostServiceTest {
 
     @Test
     @DisplayName("Fail : 삭제된 게시글 불러오기")
+    @CustomWithMockUser(username = "Test member1", nickname = "Test Nickname 1")
     void getPost_Fail4() {
         // Given
         MultipartFile[] files = {
@@ -1204,6 +1223,109 @@ public class PostServiceTest {
                 .isInstanceOf(DomainException.class)
                 .hasFieldOrPropertyWithValue("domainErrorCode", GlobalErrorCode.INVALID_INPUT_VALUE)
                 .hasMessage(GlobalErrorCode.INVALID_INPUT_VALUE.getMessage());
+    }
+
+    @Test
+    @DisplayName("Success : 같은 사용자 게시물 조회수 적용 제한")
+    @CustomWithMockUser(username = "Test member1", nickname = "Test Nickname 1")
+    public void viewCount_Success1() {
+        // given
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
+        postService.savePost(1L, savePostDto, null);
+
+        String viewCountKey = "viewCount:post:postid:1";
+
+        // when : 1
+        postService.getPost(1L, 1L);
+
+        // Then : 1
+        assertEquals(1, redisTemplate.opsForValue().get(viewCountKey));
+
+        // When : 2
+        postService.getPost(1L, 1L);
+
+        // Then : 2
+        assertEquals(1, redisTemplate.opsForValue().get(viewCountKey));
+    }
+
+    @Test
+    @DisplayName("Success : redis 에 저장된 조회수 RDB 저장")
+    public void viewCount_Success2() {
+        // given
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
+        postService.savePost(1L, savePostDto, null);
+
+        String viewCountKey = "viewCount:post:postid:1";
+        redisTemplate.opsForValue().set(viewCountKey, 10L);
+        redisTemplate.opsForSet().add("post:update", viewCountKey);
+
+        // when
+        postScheduler.viewCountsRedisToRDB();
+
+        //Then
+        Post post = postRepository.findById(1L).orElseThrow();
+        assertEquals(10L, post.getTodayViewCount());
+        assertFalse(redisTemplate.hasKey(viewCountKey));
+    }
+
+    @Test
+    @DisplayName("Success : 00 00 스케쥴러 실행")
+    public void viewCount_Success3() {
+        // given
+        PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
+        postService.savePost(1L, savePostDto, null);
+
+        String viewCountKey = "viewCount:post:postid:1";
+        String updateKey = "post:update";
+        String historyKey = "post:history";
+        redisTemplate.opsForValue().set(viewCountKey, 20L);
+        redisTemplate.opsForSet().add(updateKey, viewCountKey);
+        redisTemplate.opsForSet().add(historyKey, 1L);
+
+        // when
+        postScheduler.refreshViewCount();
+
+        // Then
+        Post post = postRepository.findById(1L).orElseThrow();
+        assertEquals(0L, post.getTodayViewCount());
+        assertEquals(20L, post.getTotalViewCount());
+    }
+
+    @Test
+    @DisplayName("Success : hot 게시물 목록 조회")
+    @CustomWithMockUser(username = "Test member1", nickname = "Test Nickname 1")
+    public void viewCount_Success4() {
+        // given
+        for (int i = 1; i <= 4; i++) {
+            PostReqDto.SavePostDto savePostDto = new PostReqDto.SavePostDto("새로운 게시글", "새로운 내용", PostStatus.PUBLIC, 1L);
+            postService.savePost(1L, savePostDto, null);
+        }
+
+        String updateKey = "post:update";
+
+        for (int i = 0; i <= 3; i++) {
+            String viewCountKey = "viewCount:post:postid:%d".formatted(i + 1);
+            redisTemplate.opsForValue().set(viewCountKey, (long) i);
+            redisTemplate.opsForSet().add(updateKey, viewCountKey);
+        }
+
+        // when
+        postScheduler.viewCountsRedisToRDB();
+
+        // Then : 1
+        List<PostRespDto.GetPostListDto> posts = postService.getTopFivePosts(1L);
+        assertEquals(3,posts.size());
+        assertEquals(3L, posts.get(0).getTodayViewCount());
+
+        // Then : 2
+        Object objectPosts =  redisTemplate.opsForValue().get("post:groupid:1");
+
+        System.out.println(objectPosts);
+
+        List<PostRespDto.GetPostListDto> cachedPosts = (List<PostRespDto.GetPostListDto>) objectPosts;
+
+        assertEquals(3, cachedPosts.size());
+        assertEquals(3L, cachedPosts.get(0).getTodayViewCount());
     }
 
     @AfterAll
