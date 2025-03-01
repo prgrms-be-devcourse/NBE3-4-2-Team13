@@ -6,6 +6,7 @@ import com.app.backend.global.dto.response.ApiResponse;
 import com.app.backend.global.module.CustomPageModule;
 import com.app.backend.global.util.LocalLockManager;
 import com.app.backend.global.util.LockKeyGenerator;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -35,6 +36,7 @@ import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisConnectionException;
 import org.springframework.data.domain.Page;
+import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
@@ -50,41 +52,77 @@ public class AppAspect {
         public Object execute(ProceedingJoinPoint joinPoint) throws Throwable {
             MethodSignature signature = (MethodSignature) joinPoint.getSignature();
             Method          method    = signature.getMethod();
+            if (method == null)
+                return joinPoint.proceed();
 
             CustomPageJsonSerializer annotation = method.getAnnotation(CustomPageJsonSerializer.class);
-            if (annotation == null) return joinPoint.proceed();
+            if (annotation == null)
+                return joinPoint.proceed();
 
             Object result = joinPoint.proceed();
 
-            if (result instanceof ApiResponse<?> apiResponse) {
-                Object body = apiResponse.getData();
+            if (result instanceof Page<?> page)
+                return processPageJson(page, annotation);
+            else if (result instanceof ApiResponse<?> apiResponse)
+                return processApiResponse(apiResponse, annotation);
+            else if (result instanceof ResponseEntity<?> responseEntity)
+                return processResponseEntity(responseEntity, annotation);
+            else
+                return result;
+        }
 
-                if (body instanceof Page<?>) {
-                    String key = generateKey(annotation);
-                    ObjectMapper objectMapper = objectMapperMap.computeIfAbsent(key, newKey -> {
-                        log.info("새로운 ObjectMapper 생성: {}", newKey);
-                        ObjectMapper newObjectMapper = new ObjectMapper();
-                        newObjectMapper.registerModules(new JavaTimeModule(), new CustomPageModule(annotation));
-                        newObjectMapper.enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-                        return newObjectMapper;
-                    });
+        private ResponseEntity<?> processResponseEntity(final ResponseEntity<?> responseEntity,
+                                                        final CustomPageJsonSerializer annotation) {
+            Object body = responseEntity.getBody();
+            if (body instanceof Page<?> page)
+                return ResponseEntity.ok(processPageJson(page, annotation));
+            else if (body instanceof ApiResponse<?> apiResponse)
+                return ResponseEntity.ok(processApiResponse(apiResponse, annotation));
+            return responseEntity;
+        }
 
-                    String   json     = objectMapper.writeValueAsString(body);
-                    JsonNode jsonNode = objectMapper.readTree(json);
+        private ApiResponse<?> processApiResponse(final ApiResponse<?> apiResponse,
+                                                  final CustomPageJsonSerializer annotation) {
+            if (apiResponse.getData() instanceof Page<?> page)
+                return ApiResponse.of(apiResponse.getIsSuccess(),
+                                      apiResponse.getCode(),
+                                      apiResponse.getMessage(),
+                                      processPageJson(page, annotation));
+            return apiResponse;
+        }
 
-                    return ApiResponse.of(apiResponse.getIsSuccess(), apiResponse.getCode(), apiResponse.getMessage(),
-                                          jsonNode);
-                }
+        private JsonNode processPageJson(final Page<?> page, final CustomPageJsonSerializer annotation) {
+            String key = generateKey(annotation);
+            ObjectMapper objectMapper = objectMapperMap.computeIfAbsent(key, newKey -> {
+                log.info("새로운 ObjectMapper 생성: {}", newKey);
+                ObjectMapper mapper = new ObjectMapper();
+                mapper.registerModules(new JavaTimeModule(), new CustomPageModule(annotation));
+                mapper.enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+                return mapper;
+            });
+
+            try {
+                String json = objectMapper.writeValueAsString(page);
+                return objectMapper.readTree(json);
+            } catch (JsonProcessingException e) {
+                log.error("Json processing exception occurred", e);
+                return null;
             }
-
-            return result;
         }
 
         private String generateKey(CustomPageJsonSerializer annotation) {
-            return annotation.content() + "_" + annotation.hasContent() + "_" + annotation.totalPages() + "_" +
-                   annotation.totalElements() + "_" + annotation.numberOfElements() + "_" + annotation.size() + "_" +
-                   annotation.number() + "_" + annotation.hasPrevious() + "_" + annotation.hasNext() + "_" +
-                   annotation.isFirst() + "_" + annotation.isLast() + "_" + annotation.sort() + "_" +
+            return annotation.content() + "_" +
+                   annotation.hasContent() + "_" +
+                   annotation.totalPages() + "_" +
+                   annotation.totalElements() + "_" +
+                   annotation.numberOfElements() + "_" +
+                   annotation.size() + "_" +
+                   annotation.number() + "_" +
+                   annotation.hasPrevious() + "_" +
+                   annotation.hasNext() + "_" +
+                   annotation.isFirst() + "_" +
+                   annotation.isLast() + "_" +
+                   annotation.sort() + "_" +
                    annotation.empty();
         }
 
