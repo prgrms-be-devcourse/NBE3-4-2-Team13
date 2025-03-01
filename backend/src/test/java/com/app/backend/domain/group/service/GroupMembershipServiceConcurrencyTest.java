@@ -47,7 +47,7 @@ import org.springframework.transaction.support.DefaultTransactionDefinition;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class GroupMembershipServiceConcurrencyTest extends SpringBootTestSupporter {
 
-    private static final int THREAD_COUNT = Math.min(10, Runtime.getRuntime().availableProcessors());
+    private static final int THREAD_COUNT = Math.max(100, Runtime.getRuntime().availableProcessors());
 
     @Autowired
     private PlatformTransactionManager transactionManager;
@@ -152,7 +152,7 @@ class GroupMembershipServiceConcurrencyTest extends SpringBootTestSupporter {
                     methodCallSuccessThreads.add(threadIndex);
                     log.info("[{}-thread] Method call success", threadIndex);
                     if (flag && firstUpdatedThreadIndex.get() == 0) {
-                        firstUpdatedThreadIndex.set(threadIndex);
+                        firstUpdatedThreadIndex.compareAndSet(0, threadIndex);
                         log.info("[{}-thread] First updated the group membership", threadIndex);
                     }
                 } catch (GroupMembershipException e) {
@@ -414,7 +414,7 @@ class GroupMembershipServiceConcurrencyTest extends SpringBootTestSupporter {
                     methodCallSuccessThreads.add(threadIndex);
                     log.info("[{}-thread] Method call success", threadIndex);
                     if (flag && firstDeletedThreadIndex.get() == 0) {
-                        firstDeletedThreadIndex.set(threadIndex);
+                        firstDeletedThreadIndex.compareAndSet(0, threadIndex);
                         log.info("[{}-thread] First deleted the group membership", threadIndex);
                     }
                 } catch (GroupMembershipException e) {
