@@ -143,8 +143,10 @@ public class AppAspect {
 
         @Around("@annotation(customLock)")
         public Object execute(ProceedingJoinPoint joinPoint, CustomLock customLock) throws Throwable {
-            String      lockKey     = LockKeyGenerator.generateLockKey(joinPoint, customLock.key());
-            LockWrapper lockWrapper = acquireLock(lockKey, customLock.maxWaitTime(), customLock.leaseTime());
+            String lockKey = LockKeyGenerator.generateLockKey(joinPoint, customLock.key());
+            LockWrapper lockWrapper = acquireLock(lockKey,
+                                                  customLock.timeUnit().toMillis(customLock.maxWaitTime()),
+                                                  customLock.timeUnit().toMillis(customLock.leaseTime()));
 
             if (!lockWrapper.isLocked())
                 throw new RuntimeException("Failed to acquire lock: " + lockKey);
