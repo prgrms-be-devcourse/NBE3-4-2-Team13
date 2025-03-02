@@ -90,21 +90,20 @@ redisson:
 - 구현 목표: 서비스 레이어 비즈니스 메서드 대상, 충돌 가능성이 존재하는 경우(조회를 제외한 생성, 수정, 삭제 등)
 - 적용 방법: @CustomLock을 적용하려는 메서드에 반영하고 key 파라미터를 반드시 작성, 파라미터는 총 3가지
 
-```java
-    String key();
+```
+String key();
 
-long maxWaitTime()
+long maxWaitTime() default 1000L;
 
-default 1000L;
+long leaseTime() default 5000L;
 
-long leaseTime()
-
-default 5000L;
+TimeUnit timeUnit() default TimeUnit.MILLISECONDS;
 ```
 
     - key: 락 적용 시 사용하는 고유키 파라미터, 필수 입력
-    - maxWaitTime: 락 획득 실패 시 최대 대기 시간(ms), 이 시간 동안 일정 간격(백오프)으로 락 획득 재시도
-    - leaseTime: 락 획득 시 최대 유지 시간(ms), 초과 후 강제 락 해제
+    - maxWaitTime: 락 획득 실패 시 최대 대기 시간, 이 시간 동안 일정 간격(백오프)으로 락 획득 재시도
+    - leaseTime: 락 획득 시 최대 유지 시간, 초과 후 강제 락 해제
+    - timeUnit: 사용할 시간의 단위
 
 - key 값은 SPEL 문법으로 작성, 구분 가능한 파라미터가 반드시 적용되어야 함
 - 적용 예시
@@ -122,6 +121,6 @@ public class EntityService {
 
 - 예시 기준으로 aId가 1이고, bId가 2일 때 생성되는 최종 락 키값은 "modify:entityA:1-entityB:2"가 됨
 - 생성된 키로 락 객체 생성 및 락 적용(lock)이 되면 해당 락을 획득한 스레드가 작업을 종료할 때까지 같은 키 값으로 접근이 불가능함
-    - 클라이언트 N개의 요청 중 2개 이상의 요청이 aId가 1, bId가 2인 경우 최초로 락을 획득한 스레드가 작업을 종료할 때까지 나머지 스레드들은 대기
-    - 락 획득에 실패한 경우 또는 락을 획득한 스레드가 일정 시간 이상 락을 반납하지 못하는 경우를 대비해 maxWaitTime과 leaseTime을 사용
+    - 클라이언트 N개의 요청 중 2개 이상의 요청이 aId가 1, bId가 2인 경우 최초로 락을 획득한 스레드가 작업을 종료할 때까지 같은 키 값을 갖는 나머지 스레드들은 대기
+    - 락 획득에 실패한 경우 또는 락을 획득한 스레드가 일정 시간 이상 락을 반납하지 못하는 경우 무한 대기를 방지하기 위해 maxWaitTime과 leaseTime을 사용
 - 작업이 완료되면 락을 반납(unlock)하고 대기 중인 키가 같은 다른 스레드 중 하나가 락을 획득하고 작업을 수행함
