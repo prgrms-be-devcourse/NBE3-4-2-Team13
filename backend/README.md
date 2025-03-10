@@ -67,24 +67,6 @@ docker-compose up -d
 - Kafka 에서 9092 포트를 사용하는데, 간혹 사용중인 포트라고 뜨는 경우가 있습니다.
 - 고로 되도록이면 Kafka 컨테이너 먼저 실행하는 것을 추천드립니다...
 
-# Redisson 락 사용을 위한 Redis 인스턴스 추가
-
-- 기존 Redis 서버(포트 6379)에서 사용 중인 Pub/Sub 기능과 Redisson이 서로 충돌하는 경우 발생
-- Redisson 락 사용을 위해 새로운 Redis 서버 생성 필요
-
-```bash
-docker run -d --name redis-lock -p 6380:6379 redis:latest
-```
-
-- 기본 설정값은 application-dev_db.yml & test_db.yml에서 참조
-
-```yaml
-redisson:
-  host: localhost
-  port: 6380
-  password:
-```
-
 ## Redisson Lock AOP 적용
 
 - 구현 목표: 서비스 레이어 비즈니스 메서드 대상, 충돌 가능성이 존재하는 경우(조회를 제외한 생성, 수정, 삭제 등)

@@ -5,6 +5,7 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -35,6 +36,14 @@ public class LockKeyGenerator {
             throw new IllegalArgumentException("Lock key cannot be null");
 
         return "%s:%s".formatted(method.getName(), convertToKey(value));
+    }
+
+    public static String generateLockKey(final String keyParam) {
+        return Arrays.stream(Thread.currentThread().getStackTrace())
+                     .filter(stackTraceElement -> !stackTraceElement.getMethodName().equals("generateLockKey"))
+                     .findFirst()
+                     .orElseThrow(() -> new RuntimeException("Failed to generate lock key"))
+                     .getMethodName();
     }
 
     private static String convertToKey(final Object value) {

@@ -5,7 +5,7 @@ import com.app.backend.global.annotation.CustomPageJsonSerializer;
 import com.app.backend.global.dto.response.ApiResponse;
 import com.app.backend.global.util.LockKeyGenerator;
 import com.app.backend.global.util.LockManager;
-import com.app.backend.global.util.LockManager.LockWrapper;
+import com.app.backend.global.util.LockUtil.LockWrapper;
 import com.app.backend.global.util.PageUtil;
 import java.lang.reflect.Method;
 import lombok.RequiredArgsConstructor;
